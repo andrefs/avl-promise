@@ -486,21 +486,23 @@ export default class AVLTree {
       this._size++;
       return Promise.resolve(this._root);
     }
-    const noDuplicates = this._noDuplicates;
-    return this._insertAsync(key, data, this._root, noDuplicates);
+    return this._insertAsync(key, data, this._root, this._noDuplicates);
   }
 
   _findParent (key, node) {
     return this._comparatorAsync(key, node.key)
       .then(cmp => {
+        if (cmp === 0 && this._noDuplicates) {
+          return Promise.resolve([node, cmp]);
+        }
         if (cmp <= 0) {
           return node.left ?
-            this._findParent(key, node.left) :
+            this._findParent(key, node.left, this._noDuplicates) :
             Promise.resolve([node, cmp]);
         }
         else {
           return node.right ?
-            this._findParent(key, node.right) :
+            this._findParent(key, node.right, this._noDuplicates) :
             Promise.resolve([node, cmp]);
         }
       });
@@ -541,11 +543,11 @@ export default class AVLTree {
       });
   }
 
-  _insertAsync (key, data, node, noDuplicates) {
+  _insertAsync (key, data, node) {
     let newNode;
     return this._findParent(key, node)
       .then(([parent, cmp]) => {
-        if (cmp === 0 && noDuplicates) return null;
+        if (cmp === 0 && this._noDuplicates) return null;
         newNode = {
           left: null,
           right: null,
