@@ -1,14 +1,44 @@
-import Promise from 'bluebird';
 import { print, isBalanced } from './utils';
 
-function DEFAULT_COMPARE (a, b) {
+
+// function createNode (parent, left, right, height, key, data) {
+//   return { parent, left, right, balanceFactor: height, key, data };
+// }
+
+/**
+ * @typedef {{
+ *   parent:        ?Node,
+ *   left:          ?Node,
+ *   right:         ?Node,
+ *   balanceFactor: number,
+ *   key:           Key,
+ *   data:          Value
+ * }} Node
+ */
+
+/**
+ * @typedef {*} Key
+ */
+
+/**
+ * @typedef {*} Value
+ */
+
+/**
+ * Default comparison function
+ * @param {Key} a
+ * @param {Key} b
+ * @returns {number}
+ */
+function DEFAULT_COMPARE (a, b) { return a > b ? 1 : a < b ? -1 : 0; }
+
+function DEFAULT_COMPARE_ASYNC (a, b) {
   return a > b ?
     Promise.resolve(1) :
     a < b ?
       Promise.resolve(-1) :
       Promise.resolve(0);
 }
-
 
 /**
  * Single left rotation
@@ -104,8 +134,9 @@ export default class AVLTree {
    * @param  {comparatorCallback} [comparator]
    * @param  {boolean}            [noDuplicates=false] Disallow duplicates
    */
-  constructor (comparator, noDuplicates = false) {
+  constructor (comparator, noDuplicates = false, comparatorAsync) {
     this._comparator = comparator || DEFAULT_COMPARE;
+    this._comparatorAsync = comparatorAsync || DEFAULT_COMPARE_ASYNC;
     this._root = null;
     this._size = 0;
     this._noDuplicates = !!noDuplicates;
@@ -135,18 +166,31 @@ export default class AVLTree {
    * @param  {Key} key
    * @return {boolean} true/false
    */
-
   contains (key) {
-    return this._contains(key, this._root, this._comparator);
+    if (this._root)  {
+      var node       = this._root;
+      var comparator = this._comparator;
+      while (node)  {
+        var cmp = comparator(key, node.key);
+        if      (cmp === 0) return true;
+        else if (cmp < 0)   node = node.left;
+        else                node = node.right;
+      }
+    }
+    return false;
   }
 
-  _contains (key, node) {
+  containsAsync (key) {
+    return this._containsAsync(key, this._root, this._comparator);
+  }
+
+  _containsAsync (key, node) {
     if (!node) { return Promise.resolve(false); }
-    return this._comparator(key, node.key)
+    return this._comparatorAsync(key, node.key)
       .then(cmp => {
         if (cmp === 0) return Promise.resolve(true);
-        if (cmp  <  0) return this._contains(key, node.left);
-        return this._contains(key, node.right);
+        if (cmp  <  0) return this._containsAsync(key, node.left);
+        return this._containsAsync(key, node.right);
       });
   }
 
@@ -233,6 +277,38 @@ export default class AVLTree {
           // subtree. Now, it's right subtree's turn
           current = current.right;
         } else done = true;
+      }
+    }
+    return this;
+  }
+
+
+  /**
+   * Walk key range from `low` to `high`. Stops if `fn` returns a value.
+   * @param  {Key}      low
+   * @param  {Key}      high
+   * @param  {Function} fn
+   * @param  {*?}       ctx
+   * @return {SplayTree}
+   */
+  range(low, high, fn, ctx) {
+    const Q = [];
+    const compare = this._comparator;
+    let node = this._root, cmp;
+
+    while (Q.length !== 0 || node) {
+      if (node) {
+        Q.push(node);
+        node = node.left;
+      } else {
+        node = Q.pop();
+        cmp = compare(node.key, high);
+        if (cmp > 0) {
+          break;
+        } else if (compare(node.key, low) >= 0) {
+          if (fn.call(ctx, node)) return this; // stop if smth is returned
+        }
+        node = node.right;
       }
     }
     return this;
@@ -388,21 +464,124 @@ export default class AVLTree {
   }
 
 
+  /**
+   * Find node by key
+   * @param  {Key} key
+   * @return {?Node}
+   */
   find (key) {
-    return this._find(key, this._root);
+    var root = this._root;
+    // if (root === null)    return null;
+    // if (key === root.key) return root;
+
+    var subtree = root, cmp;
+    var compare = this._comparator;
+    while (subtree) {
+      cmp = compare(key, subtree.key);
+      if      (cmp === 0) return subtree;
+      else if (cmp < 0)   subtree = subtree.left;
+      else                subtree = subtree.right;
+    }
+
+    return null;
   }
 
-  _find (key, node) {
+
+  findAsync (key) {
+    return this._findAsync(key, this._root);
+  }
+
+  _findAsync (key, node) {
     if (!node) return null;
-    return this._comparator(key, node.key)
+    return this._comparatorAsync(key, node.key)
       .then(cmp => {
-        if (cmp < 0) return this.__find(key, node.left);
-        if (cmp > 0) return this.__find(key, node.right);
+        if (cmp < 0) return this._findAsync(key, node.left);
+        if (cmp > 0) return this._findAsync(key, node.right);
         return Promise.resolve(node);
       });
   }
 
+
+  /**
+   * Insert a node into the tree
+   * @param  {Key} key
+   * @param  {Value} [data]
+   * @return {?Node}
+   */
   insert (key, data) {
+    if (!this._root) {
+      this._root = {
+        parent: null, left: null, right: null, balanceFactor: 0,
+        key, data
+      };
+      this._size++;
+      return this._root;
+    }
+
+    var compare = this._comparator;
+    var node    = this._root;
+    var parent  = null;
+    var cmp     = 0;
+
+    if (this._noDuplicates) {
+      while (node) {
+        cmp = compare(key, node.key);
+        parent = node;
+        if      (cmp === 0) return null;
+        else if (cmp < 0)   node = node.left;
+        else                node = node.right;
+      }
+    } else {
+      while (node) {
+        cmp = compare(key, node.key);
+        parent = node;
+        if      (cmp <= 0)  node = node.left; //return null;
+        else                node = node.right;
+      }
+    }
+
+    var newNode = {
+      left: null,
+      right: null,
+      balanceFactor: 0,
+      parent, key, data
+    };
+    var newRoot;
+    if (cmp <= 0) parent.left  = newNode;
+    else         parent.right = newNode;
+
+    while (parent) {
+      cmp = compare(parent.key, key);
+      if (cmp < 0) parent.balanceFactor -= 1;
+      else         parent.balanceFactor += 1;
+
+      if        (parent.balanceFactor === 0) break;
+      else if   (parent.balanceFactor < -1) {
+        // inlined
+        //var newRoot = rightBalance(parent);
+        if (parent.right.balanceFactor === 1) rotateRight(parent.right);
+        newRoot = rotateLeft(parent);
+
+        if (parent === this._root) this._root = newRoot;
+        break;
+      } else if (parent.balanceFactor > 1) {
+        // inlined
+        // var newRoot = leftBalance(parent);
+        if (parent.left.balanceFactor === -1) rotateLeft(parent.left);
+        newRoot = rotateRight(parent);
+
+        if (parent === this._root) this._root = newRoot;
+        break;
+      }
+      parent = parent.parent;
+    }
+
+    this._size++;
+    return newNode;
+  }
+
+
+  insertAsync (key, data) {
     if (!this._root) {
       this._root = {
         parent: null, left: null, right: null, balanceFactor: 0,
@@ -412,20 +591,20 @@ export default class AVLTree {
       return Promise.resolve(this._root);
     }
     const noDuplicates = this._noDuplicates;
-    return this._insert(key, data, this._root, noDuplicates);
+    return this._insertAsync(key, data, this._root, noDuplicates);
   }
 
   _findParent (key, node) {
-    return this._comparator(key, node.key)
+    return this._comparatorAsync(key, node.key)
       .then(cmp => {
         if (cmp < 0) {
           return node.left ?
-            this._find(key, node.left) :
+            this._findAsync(key, node.left) :
             Promise.resolve([node, cmp]);
         }
         if (cmp > 0) {
           return node.right ?
-            this._find(key, node.right) :
+            this._findAsync(key, node.right) :
             Promise.resolve([node, cmp]);
         }
         return Promise.resolve([node, cmp]);
@@ -435,7 +614,7 @@ export default class AVLTree {
   _rebalance (parent, key) {
     let newRoot;
 
-    return this._comparator(parent, key)
+    return this._comparatorAsync(parent, key)
       .then(cmp => {
         if (cmp < 0) parent.balanceFactor -= 1;
         else parent.balanceFactor += 1;
@@ -460,7 +639,7 @@ export default class AVLTree {
       });
   }
 
-  _insert (key, data, node, noDuplicates) {
+  _insertAsync (key, data, node, noDuplicates) {
     let newNode;
     return this._findParent(key, node)
       .then(([parent, cmp]) => {
@@ -479,6 +658,7 @@ export default class AVLTree {
       })
       .then(() => newNode);
   }
+
 
   /**
    * Removes the node from the tree. If not found, returns null.
