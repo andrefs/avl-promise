@@ -35,6 +35,7 @@ function row (root, prefix, isTail, out, printNode) {
  * @return {Boolean}
  */
 export function isBalanced(root) {
+  //console.log(print(root));
   if (root === null) return true; // If node is empty then return true
 
   // Get the height of left and right sub trees
@@ -45,6 +46,7 @@ export function isBalanced(root) {
       isBalanced(root.left)  &&
       isBalanced(root.right)) return true;
 
+  //console.log(print(root));
   // If we reach here then tree is not height-balanced
   return false;
 }

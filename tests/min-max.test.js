@@ -4,162 +4,83 @@ import { assert }       from 'chai';
 import Tree from '../src/index';
 
 
-describe.only ('find min and max', () => {
-  describe ('sync', () => {
-
-    it('should return the maximum key in the tree', () => {
-      const tree = new Tree();
-      tree.insert(3);
-      tree.insert(5);
-      tree.insert(1);
-      tree.insert(4);
-      tree.insert(2);
-      assert.equal(tree.max(), 5);
-    });
-
-    it ('should return null for max if the tree is empty', () => {
-      const tree = new Tree();
-      assert.isNull(tree.max());
-    });
-
-    it('should return the minimum key in the tree', () => {
-      const tree = new Tree();
-      tree.insert(5);
-      tree.insert(3);
-      tree.insert(1);
-      tree.insert(4);
-      tree.insert(2);
-      assert.equal(tree.min(), 1);
-    });
-
-    it ('should return the max node', () => {
-      const tree = new Tree();
-      tree.insert(3);
-      tree.insert(5, 10);
-      tree.insert(1);
-      tree.insert(4);
-      tree.insert(2);
-      const node = tree.maxNode();
-      assert.equal(node.key, 5);
-      assert.equal(node.data, 10);
-    });
-
-    it ('should return null for maxNode if the tree is empty', () => {
-      const tree = new Tree();
-      assert.isNull(tree.maxNode());
-    });
-
-    it ('should return the min node', () => {
-      const tree = new Tree();
-      tree.insert(5);
-      tree.insert(3);
-      tree.insert(1, 20);
-      tree.insert(4);
-      tree.insert(2);
-      const node = tree.minNode();
-      assert.equal(node.key, 1);
-      assert.equal(node.data, 20);
-    });
-
-    it ('should return null for min if the tree is empty', () => {
-      const tree = new Tree();
-      assert.isNull(tree.min());
-    });
-
-    it ('should support removing min node', () => {
-      const tree = new Tree();
-      tree.insert(5);
-      tree.insert(3);
-      tree.insert(1);
-      tree.insert(4);
-      tree.insert(2);
-      assert.equal(tree.pop().key, 1);
-    });
-
-    it ('should return null for minNode if the tree is empty', () => {
-      const tree = new Tree();
-      assert.isNull(tree.minNode());
-    });
+describe('find min and max', () => {
+  it('should return the maximum key in the tree', () => {
+    const tree = new Tree();
+    return tree.insert(3)
+      .then(() => tree.insert(5))
+      .then(() => tree.insert(1))
+      .then(() => tree.insert(4))
+      .then(() => tree.insert(2))
+      .then(() => assert.equal(tree.max(), 5));
   });
 
-  describe ('async', () => {
-    it('should return the maximum key in the tree', () => {
-      const tree = new Tree();
-      return tree.insertAsync(3)
-        .then(() => tree.insertAsync(5))
-        .then(() => tree.insertAsync(1))
-        .then(() => tree.insertAsync(4))
-        .then(() => tree.insertAsync(2))
-        .then(() => assert.equal(tree.max(), 5));
-    });
+  it ('should return null for max if the tree is empty', () => {
+    const tree = new Tree();
+    assert.isNull(tree.max());
+  });
 
-    it ('should return null for max if the tree is empty', () => {
-      const tree = new Tree();
-      assert.isNull(tree.max());
-    });
+  it('should return the minimum key in the tree', () => {
+    const tree = new Tree();
+    return tree.insert(5)
+      .then(() => tree.insert(3))
+      .then(() => tree.insert(1))
+      .then(() => tree.insert(4))
+      .then(() => tree.insert(2))
+      .then(() => assert.equal(tree.min(), 1));
+  });
 
-    it('should return the minimum key in the tree', () => {
-      const tree = new Tree();
-      return tree.insertAsync(5)
-        .then(() => tree.insertAsync(3))
-        .then(() => tree.insertAsync(1))
-        .then(() => tree.insertAsync(4))
-        .then(() => tree.insertAsync(2))
-        .then(() => assert.equal(tree.min(), 1));
-    });
+  it ('should return the max node', () => {
+    const tree = new Tree();
+    return tree.insert(3)
+      .then(() => tree.insert(5, 10))
+      .then(() => tree.insert(1))
+      .then(() => tree.insert(4))
+      .then(() => tree.insert(2))
+      .then(() => {
+        const node = tree.maxNode();
+        assert.equal(node.key, 5);
+        assert.equal(node.data, 10);
+      });
+  });
 
-    it ('should return the max node', () => {
-      const tree = new Tree();
-      return tree.insertAsync(3)
-        .then(() => tree.insertAsync(5, 10))
-        .then(() => tree.insertAsync(1))
-        .then(() => tree.insertAsync(4))
-        .then(() => tree.insertAsync(2))
-        .then(() => {
-          const node = tree.maxNode();
-          assert.equal(node.key, 5);
-          assert.equal(node.data, 10);
-        });
-    });
+  it ('should return null for maxNode if the tree is empty', () => {
+    const tree = new Tree();
+    assert.isNull(tree.maxNode());
+  });
 
-    it ('should return null for maxNode if the tree is empty', () => {
-      const tree = new Tree();
-      assert.isNull(tree.maxNode());
-    });
+  it ('should return the min node', () => {
+    const tree = new Tree();
+    return tree.insert(5)
+      .then(() => tree.insert(3))
+      .then(() => tree.insert(1, 20))
+      .then(() => tree.insert(4))
+      .then(() => tree.insert(2))
+      .then(() => {
+        const node = tree.minNode();
+        assert.equal(node.key, 1);
+        assert.equal(node.data, 20);
+      });
+  });
 
-    it ('should return the min node', () => {
-      const tree = new Tree();
-      return tree.insertAsync(5)
-        .then(() => tree.insertAsync(3))
-        .then(() => tree.insertAsync(1, 20))
-        .then(() => tree.insertAsync(4))
-        .then(() => tree.insertAsync(2))
-        .then(() => {
-          const node = tree.minNode();
-          assert.equal(node.key, 1);
-          assert.equal(node.data, 20);
-        });
-    });
+  it ('should return null for min if the tree is empty', () => {
+    const tree = new Tree();
+    assert.isNull(tree.min());
+  });
 
-    it ('should return null for min if the tree is empty', () => {
-      const tree = new Tree();
-      assert.isNull(tree.min());
-    });
+  // it ('should support removing min node', () => {
+  //   const tree = new Tree();
+  //   return tree.insert(5)
+  //     .then(() => tree.insert(3))
+  //     .then(() => tree.insert(1))
+  //     .then(() => tree.insert(4))
+  //     .then(() => tree.insert(2))
+  //     .then(() => assert.equal(tree.pop().key, 1));
+  // });
 
-    // it ('should support removing min node', () => {
-    //   const tree = new Tree();
-    //   return tree.insertAsync(5)
-    //     .then(() => tree.insertAsync(3))
-    //     .then(() => tree.insertAsync(1))
-    //     .then(() => tree.insertAsync(4))
-    //     .then(() => tree.insertAsync(2))
-    //     .then(() => assert.equal(tree.pop().key, 1));
-    // });
-
-    it ('should return null for minNode if the tree is empty', () => {
-      const tree = new Tree();
-      assert.isNull(tree.minNode());
-    });
+  it ('should return null for minNode if the tree is empty', () => {
+    const tree = new Tree();
+    assert.isNull(tree.minNode());
   });
 
 });
