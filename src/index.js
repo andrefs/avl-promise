@@ -599,12 +599,12 @@ export default class AVLTree {
       .then(cmp => {
         if (cmp < 0) {
           return node.left ?
-            this._findAsync(key, node.left) :
+            this._findParent(key, node.left) :
             Promise.resolve([node, cmp]);
         }
         if (cmp > 0) {
           return node.right ?
-            this._findAsync(key, node.right) :
+            this._findParent(key, node.right) :
             Promise.resolve([node, cmp]);
         }
         return Promise.resolve([node, cmp]);
@@ -613,6 +613,11 @@ export default class AVLTree {
 
   _rebalance (parent, key) {
     let newRoot;
+
+    if (!parent) {
+      this._size++;
+      return Promise.resolve();
+    }
 
     return this._comparatorAsync(parent, key)
       .then(cmp => {
@@ -642,7 +647,7 @@ export default class AVLTree {
   _insertAsync (key, data, node, noDuplicates) {
     let newNode;
     return this._findParent(key, node)
-      .then(([parent, cmp]) => {
+      .then(([parent,cmp]) => {
         if (cmp === 0 && noDuplicates) return null;
         newNode = {
           left: null,
