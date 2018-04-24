@@ -619,7 +619,7 @@ export default class AVLTree {
       return Promise.resolve();
     }
 
-    return this._comparatorAsync(parent, key)
+    return this._comparatorAsync(parent.key, key)
       .then(cmp => {
         if (cmp < 0) parent.balanceFactor -= 1;
         else parent.balanceFactor += 1;
@@ -659,9 +659,9 @@ export default class AVLTree {
         if (cmp <= 0) parent.left  = newNode;
         else parent.right = newNode;
 
-        return this._rebalance(parent, node.key);
+        return this._rebalance(parent, key);
       })
-      .then(() => newNode);
+      .then(() =>  newNode);
   }
 
 
