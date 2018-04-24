@@ -3,7 +3,6 @@ import chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 chai.use(chaiAsPromised);
 const assert = chai.assert;
-import Promise from 'bluebird';
 
 import Tree from '../src/index';
 
@@ -27,8 +26,6 @@ describe('contains check', () => {
       assert.isTrue(tree.contains(1));
       assert.isTrue(tree.contains(2));
       assert.isTrue(tree.contains(3));
-
-      console.log('XXXXXXXXXxx 1', tree.size);
     });
 
 

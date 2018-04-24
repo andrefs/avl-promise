@@ -53,7 +53,7 @@ describe ('custom comparator', () => {
   });
 
   describe('async', () => {
-    it.only('should function correctly given a non-reverse customCompare', () => {
+    it('should function correctly given a non-reverse customCompare', () => {
       const tree = new Tree(null, null, (a, b) => Promise.resolve(b - a));
       return tree.insertAsync(2)
         .then(() => tree.insertAsync(1))

@@ -492,7 +492,7 @@ export default class AVLTree {
   }
 
   _findAsync (key, node) {
-    if (!node) return null;
+    if (!node) return Promise.resolve(null);
     return this._comparatorAsync(key, node.key)
       .then(cmp => {
         if (cmp < 0) return this._findAsync(key, node.left);
