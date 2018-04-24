@@ -55,5 +55,7 @@
     "avl",
     "balanced-search-tree"
   ],
-  "dependencies": {}
+  "dependencies": {
+    "bluebird": "^3.5.1"
+  }
 }

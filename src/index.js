@@ -1,5 +1,5 @@
-import { print, isBalanced } from './utils';
 import Promise from 'bluebird';
+import { print, isBalanced } from './utils';
 
 function DEFAULT_COMPARE (a, b) {
   return a > b ?
@@ -136,18 +136,19 @@ export default class AVLTree {
    * @return {boolean} true/false
    */
 
-  contains(key) = this._contains(key, this._root, this._comparator);
-
-  _contains(key, node, comparator){
-    if(!node){ return Promise.resolve(false); }
-    return comparator(key, node.key)
-      .then(cmp => {
-        if      (cmp === 0){ return Promise.resolve(true);      }
-        else if (cmp  <  0){ return _contains(key, node.left);  }
-        else               { return _contains(key, node.right); }
-      });
+  contains (key) {
+    return this._contains(key, this._root, this._comparator);
   }
 
+  _contains (key, node) {
+    if (!node) { return Promise.resolve(false); }
+    return this._comparator(key, node.key)
+      .then(cmp => {
+        if (cmp === 0) return Promise.resolve(true);
+        if (cmp  <  0) return this._contains(key, node.left);
+        return this._contains(key, node.right);
+      });
+  }
 
 
   /* eslint-disable class-methods-use-this */
@@ -387,80 +388,83 @@ export default class AVLTree {
   }
 
 
-  find(key){
-    return this._find(key, node, comparator);
+  find (key) {
+    return this._find(key, this._root);
   }
 
-  _find(key, node, comparator){
-    if(!node){ return null; }
-    return comparator(key, node.key)
+  _find (key, node) {
+    if (!node) return null;
+    return this._comparator(key, node.key)
       .then(cmp => {
-        if(cmp === 0){ return Promise.resolve(node);     }
-        if(cmp < 0  ){ return _find(key, node.left);  }
-        if(cmp > 0  ){ return _find(key, node.right); }
+        if (cmp < 0) return this.__find(key, node.left);
+        if (cmp > 0) return this.__find(key, node.right);
+        return Promise.resolve(node);
       });
   }
 
-  insert(key, data){
-    return this._insert(key, data, this._root, comparator);
+  insert (key, data) {
+    if (!this._root) {
+      this._root = {
+        parent: null, left: null, right: null, balanceFactor: 0,
+        key, data
+      };
+      this._size++;
+      return Promise.resolve(this._root);
+    }
+    const noDuplicates = this._noDuplicates;
+    return this._insert(key, data, this._root, noDuplicates);
   }
 
-  _findParent(key, node, comparator, noDuplicates){
-  return comparator(key, node.key)
-    .then(cmp => {
-      if(cmp === 0){ return Promise.resolve([node, cmp]); }
-      if(cmp < 0  ){
-        return node.left ?
-          _find(key, node.left) :
-          Promise.resolve([node, cmp]);
-      }
-      else {
-        return node.right ?
-          _find(key, node.right) :
-          Promise.resolve([node, cmp]);
-      }
-    });
+  _findParent (key, node) {
+    return this._comparator(key, node.key)
+      .then(cmp => {
+        if (cmp < 0) {
+          return node.left ?
+            this._find(key, node.left) :
+            Promise.resolve([node, cmp]);
+        }
+        if (cmp > 0) {
+          return node.right ?
+            this._find(key, node.right) :
+            Promise.resolve([node, cmp]);
+        }
+        return Promise.resolve([node, cmp]);
+      });
   }
 
-  _rebalance(parent, key, comparator){
+  _rebalance (parent, key) {
     let newRoot;
 
-    return comparator(parent, key)
+    return this._comparator(parent, key)
       .then(cmp => {
-        if(cmp < 0){ parent.balanceFactor -= 1; }
-        else     { parent.balanceFactor += 1; }
+        if (cmp < 0) parent.balanceFactor -= 1;
+        else parent.balanceFactor += 1;
 
-        if(parent.balanceFactor === 0){
+        if (parent.balanceFactor === 0) {
           this._size++;
           return Promise.resolve();
-        }
-        else if (parent.balanceFactor < -1){
-          if(parent.right.balanceFactor === 1){
-            rotateRight(parent.right);
-          }
+        } else if (parent.balanceFactor < -1) {
+          if (parent.right.balanceFactor === 1) rotateRight(parent.right);
           newRoot = rotateLeft(parent);
 
-          if(parent === this._root){ this._root = newRoot; }
+          if (parent === this._root) this._root = newRoot;
           return Promise.resolve();
-        }
-        else if(parent.balanceFactor > 1){
-          if(parent.left.balanceFactor === -1){
-            rotateLeft(parent.left);
-          }
+        } else if (parent.balanceFactor > 1) {
+          if (parent.left.balanceFactor === -1) rotateLeft(parent.left);
           newRoot = rotateRight(parent);
 
-          if(parent === this._root){ this._root = newRoot; }
+          if (parent === this._root) this._root = newRoot;
           return Promise.resolve();
         }
-        return _rebalance(parent.parent, key, comparator);
+        return this._rebalance(parent.parent, key);
       });
   }
 
-  _insert(key, data, node, comparator, noDuplicates){
+  _insert (key, data, node, noDuplicates) {
     let newNode;
-    return _findParent(key, node, comparator, noDuplicates)
+    return this._findParent(key, node)
       .then(([parent, cmp]) => {
-        if(cmp === 0 && noDuplicates){ return null; }
+        if (cmp === 0 && noDuplicates) return null;
         newNode = {
           left: null,
           right: null,
@@ -468,11 +472,11 @@ export default class AVLTree {
           parent, key, data
         };
 
-        if(cmp <= 0){ parent.left  = newNode; }
-        else    { parent.right = newNode; }
+        if (cmp <= 0) parent.left  = newNode;
+        else parent.right = newNode;
 
-        return _rebalance(parent, node.key, comparator);
-       })
+        return this._rebalance(parent, node.key);
+      })
       .then(() => newNode);
   }
 
