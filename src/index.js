@@ -632,12 +632,14 @@ export default class AVLTree {
           newRoot = rotateLeft(parent);
 
           if (parent === this._root) this._root = newRoot;
+          this._size++;
           return Promise.resolve();
         } else if (parent.balanceFactor > 1) {
           if (parent.left.balanceFactor === -1) rotateLeft(parent.left);
           newRoot = rotateRight(parent);
 
           if (parent === this._root) this._root = newRoot;
+          this._size++;
           return Promise.resolve();
         }
         return this._rebalance(parent.parent, key);
@@ -661,7 +663,9 @@ export default class AVLTree {
 
         return this._rebalance(parent, key);
       })
-      .then(() =>  newNode);
+      .then(() => {
+        return newNode;
+      });
   }
 
 
