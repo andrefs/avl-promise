@@ -107,7 +107,7 @@ describe ('insert', () => {
   });
 
 
-  describe.only ('async', () => {
+  describe ('async', () => {
 
     it('should return the size of the tree', () => {
       const tree = new Tree();
