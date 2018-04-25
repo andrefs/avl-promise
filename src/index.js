@@ -500,11 +500,9 @@ export default class AVLTree {
             this._findParent(key, node.left, this._noDuplicates) :
             Promise.resolve([node, cmp]);
         }
-        else {
-          return node.right ?
-            this._findParent(key, node.right, this._noDuplicates) :
-            Promise.resolve([node, cmp]);
-        }
+        return node.right ?
+          this._findParent(key, node.right, this._noDuplicates) :
+          Promise.resolve([node, cmp]);
       });
   }
 
