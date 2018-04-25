@@ -1,7 +1,9 @@
 const Benchmark = require('benchmark');
-const Tree      = require('../dist/avl');
+const Tree      = require('avl');
+const PTree     = require('../dist/avl-promise');
 const FRB       = require('functional-red-black-tree');
 const RBTree    = require('bintrees').RBTree;
+const Promise   = require('bluebird');
 
 require('google-closure-library');
 goog.require('goog.structs.AvlTree');
@@ -19,6 +21,9 @@ let prefilledFRB = new FRB();
 rvalues.forEach((v) => { prefilledFRB = prefilledFRB.insert(v); });
 const prefilledGCAVL = new goog.structs.AvlTree((a, b) => a - b);
 rvalues.forEach((v) => prefilledGCAVL.add(v));
+const keys = [];
+for (let i = 0; i < N; i++) keys.push(rvalues[i]);
+
 
 const options = {
   onStart (event) { console.log(this.name); },
@@ -42,40 +47,48 @@ new Benchmark.Suite(`Insert (x${N})`, options)
     let gcavl = new goog.structs.AvlTree((a, b) => a - b);
     for (let i = 0; i < N; i++) gcavl.add(rvalues[i]);
   })
-  .add('AVL (current)', () => {
+  .add('AVL (sync version)', () => {
     const tree = new Tree();
     for (let i = 0; i < N; i++) tree.insert(rvalues[i]);
   })
-  .run();
-
-
-new Benchmark.Suite(`Random read (x${N})`, options)
-  .add('Bintrees', () => {
-    for (let i = N - 1; i; i--) prefilledRB.find(rvalues[i]);
-  })
-  .add('Functional red black tree', () => {
-    for (let i = N - 1; i; i--) prefilledFRB.get(rvalues[i]);
-  })
-  .add('Google Closure library AVL', () => {
-    for (let i = 0; i < N; i++) prefilledGCAVL.inOrderTraverse((v) => v === rvalues[i]);
-  })
-  .add('AVL (current)', () => {
-    for (let i = N - 1; i; i--) prefilledAVL.find(rvalues[i]);
+  .add('AVL Promise (current)', {
+    defer: true,
+    fn: (deferred) => {
+      const tree = new PTree();
+      Promise.each(keys, k => tree.insert(k))
+        .then(() => deferred.resolve());
+    }
   })
   .run();
 
 
-new Benchmark.Suite(`Remove (x${N})`, options)
-  .add('Bintrees', () => {
-    for (let i = 0; i < N; i++) prefilledRB.remove(rvalues[i]);
-  })
-  .add('Functional red black tree', () => {
-    for (let i = 0; i < N; i++) prefilledFRB = prefilledFRB.remove(rvalues[i]);
-  })
-  .add('Google Closure library AVL', () => {
-    for (let i = 0; i < N; i++) prefilledGCAVL.remove(rvalues[i]);
-  })
-  .add('AVL (current)', () => {
-    for (let i = N - 1; i; i--) prefilledAVL.remove(values[i]);
-  })
-  .run();
+// new Benchmark.Suite(`Random read (x${N})`, options)
+//   .add('Bintrees', () => {
+//     for (let i = N - 1; i; i--) prefilledRB.find(rvalues[i]);
+//   })
+//   .add('Functional red black tree', () => {
+//     for (let i = N - 1; i; i--) prefilledFRB.get(rvalues[i]);
+//   })
+//   .add('Google Closure library AVL', () => {
+//     for (let i = 0; i < N; i++) prefilledGCAVL.inOrderTraverse((v) => v === rvalues[i]);
+//   })
+//   .add('AVL (current)', () => {
+//     for (let i = N - 1; i; i--) prefilledAVL.find(rvalues[i]);
+//   })
+//   .run();
+// 
+// 
+// new Benchmark.Suite(`Remove (x${N})`, options)
+//   .add('Bintrees', () => {
+//     for (let i = 0; i < N; i++) prefilledRB.remove(rvalues[i]);
+//   })
+//   .add('Functional red black tree', () => {
+//     for (let i = 0; i < N; i++) prefilledFRB = prefilledFRB.remove(rvalues[i]);
+//   })
+//   .add('Google Closure library AVL', () => {
+//     for (let i = 0; i < N; i++) prefilledGCAVL.remove(rvalues[i]);
+//   })
+//   .add('AVL (current)', () => {
+//     for (let i = N - 1; i; i--) prefilledAVL.remove(values[i]);
+//   })
+//   .run();

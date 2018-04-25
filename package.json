@@ -1,9 +1,9 @@
 {
-  "name": "avl",
-  "version": "1.4.2",
-  "author": "Alexander Milevski <info@w8r.name>",
+  "name": "avl-promise",
+  "version": "0.0.1",
+  "author": "André Santos <andrefs@andrefs.com>",
   "license": "MIT",
-  "description": "Fast AVL tree for Node and browser",
+  "description": "Largely copied from avl (https://www.npmjs.com/package/avl), but with a Promise-based comparator!",
   "main": "dist/avl-promise.js",
   "jsnext:main": "src/index",
   "module": "src/index",
@@ -57,6 +57,7 @@
     "balanced-search-tree"
   ],
   "dependencies": {
+    "avl": "^1.4.2",
     "bluebird": "^3.5.1"
   }
 }
