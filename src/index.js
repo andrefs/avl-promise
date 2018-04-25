@@ -1,3 +1,4 @@
+import Promise from 'bluebird';
 import { print, isBalanced } from './utils';
 
 
@@ -674,12 +675,13 @@ export default class AVLTree {
    * @return {AVLTree}
    */
   load(keys = [], values = []) {
-    if (Array.isArray(keys)) {
-      for (var i = 0, len = keys.length; i < len; i++) {
-        this.insert(keys[i], values[i]);
-      }
-    }
-    return this;
+    if (!Array.isArray(keys)) return this;
+
+    const pairs = [];
+    keys.forEach((k, i) => pairs.push({ k, v: values[i] }));
+
+    return Promise.each(pairs, p => this.insert(p.k, p.v))
+      .then(() => this);
   }
 
 

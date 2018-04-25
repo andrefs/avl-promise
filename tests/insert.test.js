@@ -84,22 +84,24 @@ describe ('insert', () => {
       .then(() => assert.equal(tree._root.key, 2));
   });
 
-  // it ('should allow bulk-insert', () => {
-  //   const tree = new Tree();
-  //   const keys = [1,2,3,4];
-  //   const values = [4,3,2,1];
-  //   tree.load(keys, values);
+  it ('should allow bulk-insert', () => {
+    const tree = new Tree();
+    const keys = [1,2,3,4];
+    const values = [4,3,2,1];
+    return tree.load(keys, values)
+      .then(() => {
+        assert.deepEqual(tree.keys(), keys);
+        assert.deepEqual(tree.values(), values);
+      });
+  });
 
-  //   assert.deepEqual(tree.keys(), keys);
-  //   assert.deepEqual(tree.values(), values);
-  // });
-
-  // it ('should allow bulk-insert without values', () => {
-  //   const tree = new Tree();
-  //   const keys = [1,2,3,4];
-  //   tree.load(keys);
-
-  //   assert.deepEqual(tree.keys(), keys);
-  //   assert.deepEqual(tree.values(), keys.map(k => undefined));
-  // });
+  it ('should allow bulk-insert without values', () => {
+    const tree = new Tree();
+    const keys = [1,2,3,4];
+    return tree.load(keys)
+      .then(() => {
+        assert.deepEqual(tree.keys(), keys);
+        assert.deepEqual(tree.values(), keys.map(k => undefined));
+      });
+  });
 });

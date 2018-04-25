@@ -59,12 +59,12 @@ such, return Promises.
 * `tree.insert(key:any, [data:any])` - Insert item
 * `tree.find(key):Node|Null` - Return node by its key
 * `tree.contains(key):Boolean` - Whether a node with the given key is in the tree
+* `tree.load(keys:Array<*>, [values:Array<*>]):Tree` - Bulk-load items
 
 ### TBD
 
 * `tree.remove(key:any)` - Remove item
 * `tree.range(lo, high, function(node) {} [, context]):Tree` - Walks the range of keys in order. Stops, if the visitor function returns a non-zero value.
-* `tree.load(keys:Array<*>, [values:Array<*>]):Tree` - Bulk-load items
 
 **Comparator**
 
