@@ -8,10 +8,12 @@
  */
 
 (function (global, factory) {
-	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
-	typeof define === 'function' && define.amd ? define(factory) :
-	(global.AVLTree = factory());
-}(this, (function () { 'use strict';
+	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('bluebird')) :
+	typeof define === 'function' && define.amd ? define(['bluebird'], factory) :
+	(global.AVLTree = factory(global.Promise));
+}(this, (function (Promise) { 'use strict';
+
+Promise = Promise && Promise.hasOwnProperty('default') ? Promise['default'] : Promise;
 
 /**
  * Prints tree horizontally
@@ -106,8 +108,14 @@ function height(node) {
  * @param {Key} b
  * @returns {number}
  */
-function DEFAULT_COMPARE (a, b) { return a > b ? 1 : a < b ? -1 : 0; }
 
+function DEFAULT_COMPARE_ASYNC (a, b) {
+  return a > b ?
+    Promise.resolve(1) :
+    a < b ?
+      Promise.resolve(-1) :
+      Promise.resolve(0);
+}
 
 /**
  * Single left rotation
@@ -191,7 +199,7 @@ function rotateRight (node) {
 var AVLTree = function AVLTree (comparator, noDuplicates) {
   if ( noDuplicates === void 0 ) noDuplicates = false;
 
-  this._comparator = comparator || DEFAULT_COMPARE;
+  this._comparatorAsync = comparator || DEFAULT_COMPARE_ASYNC;
   this._root = null;
   this._size = 0;
   this._noDuplicates = !!noDuplicates;
@@ -223,18 +231,21 @@ prototypeAccessors.size.get = function () {
  * @param{Key} key
  * @return {boolean} true/false
  */
+
 AVLTree.prototype.contains = function contains (key) {
-  if (this._root){
-    var node     = this._root;
-    var comparator = this._comparator;
-    while (node){
-      var cmp = comparator(key, node.key);
-      if    (cmp === 0) { return true; }
-      else if (cmp < 0) { node = node.left; }
-      else              { node = node.right; }
-    }
-  }
-  return false;
+  return this._containsAsync(key, this._root, this._comparator);
+};
+
+AVLTree.prototype._containsAsync = function _containsAsync (key, node) {
+    var this$1 = this;
+
+  if (!node) { return Promise.resolve(false); }
+  return this._comparatorAsync(key, node.key)
+    .then(function (cmp) {
+      if (cmp === 0) { return Promise.resolve(true); }
+      if (cmp<0) { return this$1._containsAsync(key, node.left); }
+      return this$1._containsAsync(key, node.right);
+    });
 };
 
 
@@ -514,21 +525,21 @@ AVLTree.prototype.pop = function pop () {
  * @param{Key} key
  * @return {?Node}
  */
+
 AVLTree.prototype.find = function find (key) {
-  var root = this._root;
-  // if (root === null)  return null;
-  // if (key === root.key) return root;
+  return this._findAsync(key, this._root);
+};
 
-  var subtree = root, cmp;
-  var compare = this._comparator;
-  while (subtree) {
-    cmp = compare(key, subtree.key);
-    if    (cmp === 0) { return subtree; }
-    else if (cmp < 0) { subtree = subtree.left; }
-    else              { subtree = subtree.right; }
-  }
+AVLTree.prototype._findAsync = function _findAsync (key, node) {
+    var this$1 = this;
 
-  return null;
+  if (!node) { return Promise.resolve(null); }
+  return this._comparatorAsync(key, node.key)
+    .then(function (cmp) {
+      if (cmp < 0) { return this$1._findAsync(key, node.left); }
+      if (cmp > 0) { return this$1._findAsync(key, node.right); }
+      return Promise.resolve(node);
+    });
 };
 
 
@@ -538,78 +549,98 @@ AVLTree.prototype.find = function find (key) {
  * @param{Value} [data]
  * @return {?Node}
  */
-AVLTree.prototype.insert = function insert (key, data) {
-    var this$1 = this;
 
+AVLTree.prototype.insert = function insert (key, data) {
   if (!this._root) {
     this._root = {
       parent: null, left: null, right: null, balanceFactor: 0,
       key: key, data: data
     };
     this._size++;
-    return this._root;
+    return Promise.resolve(this._root);
   }
+  return this._insertAsync(key, data, this._root, this._noDuplicates);
+};
 
-  var compare = this._comparator;
-  var node  = this._root;
-  var parent= null;
-  var cmp   = 0;
+AVLTree.prototype._findParent = function _findParent (key, node) {
+    var this$1 = this;
 
-  if (this._noDuplicates) {
-    while (node) {
-      cmp = compare(key, node.key);
-      parent = node;
-      if    (cmp === 0) { return null; }
-      else if (cmp < 0) { node = node.left; }
-      else              { node = node.right; }
-    }
-  } else {
-    while (node) {
-      cmp = compare(key, node.key);
-      parent = node;
-      if    (cmp <= 0){ node = node.left; } //return null;
-      else              { node = node.right; }
-    }
-  }
+  return this._comparatorAsync(key, node.key)
+    .then(function (cmp) {
+      if (cmp === 0 && this$1._noDuplicates) {
+        return Promise.resolve([node, cmp]);
+      }
+      if (cmp <= 0) {
+        return node.left ?
+          this$1._findParent(key, node.left, this$1._noDuplicates) :
+          Promise.resolve([node, cmp]);
+      }
+      return node.right ?
+        this$1._findParent(key, node.right, this$1._noDuplicates) :
+        Promise.resolve([node, cmp]);
+    });
+};
 
-  var newNode = {
-    left: null,
-    right: null,
-    balanceFactor: 0,
-    parent: parent, key: key, data: data
-  };
+AVLTree.prototype._rebalance = function _rebalance (parent, key) {
+    var this$1 = this;
+
   var newRoot;
-  if (cmp <= 0) { parent.left= newNode; }
-  else       { parent.right = newNode; }
 
-  while (parent) {
-    cmp = compare(parent.key, key);
-    if (cmp < 0) { parent.balanceFactor -= 1; }
-    else       { parent.balanceFactor += 1; }
-
-    if      (parent.balanceFactor === 0) { break; }
-    else if (parent.balanceFactor < -1) {
-      // inlined
-      //var newRoot = rightBalance(parent);
-      if (parent.right.balanceFactor === 1) { rotateRight(parent.right); }
-      newRoot = rotateLeft(parent);
-
-      if (parent === this$1._root) { this$1._root = newRoot; }
-      break;
-    } else if (parent.balanceFactor > 1) {
-      // inlined
-      // var newRoot = leftBalance(parent);
-      if (parent.left.balanceFactor === -1) { rotateLeft(parent.left); }
-      newRoot = rotateRight(parent);
-
-      if (parent === this$1._root) { this$1._root = newRoot; }
-      break;
-    }
-    parent = parent.parent;
+  if (!parent) {
+    this._size++;
+    return Promise.resolve();
   }
 
-  this._size++;
-  return newNode;
+  return this._comparatorAsync(parent.key, key)
+    .then(function (cmp) {
+      if (cmp < 0) { parent.balanceFactor -= 1; }
+      else { parent.balanceFactor += 1; }
+
+      if (parent.balanceFactor === 0) {
+        this$1._size++;
+        return Promise.resolve();
+      } else if (parent.balanceFactor < -1) {
+        if (parent.right.balanceFactor === 1) { rotateRight(parent.right); }
+        newRoot = rotateLeft(parent);
+
+        if (parent === this$1._root) { this$1._root = newRoot; }
+        this$1._size++;
+        return Promise.resolve();
+      } else if (parent.balanceFactor > 1) {
+        if (parent.left.balanceFactor === -1) { rotateLeft(parent.left); }
+        newRoot = rotateRight(parent);
+
+        if (parent === this$1._root) { this$1._root = newRoot; }
+        this$1._size++;
+        return Promise.resolve();
+      }
+      return this$1._rebalance(parent.parent, key);
+    });
+};
+
+AVLTree.prototype._insertAsync = function _insertAsync (key, data, node) {
+    var this$1 = this;
+
+  var newNode;
+  return this._findParent(key, node)
+    .then(function (ref) {
+        var parent = ref[0];
+        var cmp = ref[1];
+
+      if (cmp === 0 && this$1._noDuplicates) { return null; }
+      newNode = {
+        left: null,
+        right: null,
+        balanceFactor: 0,
+        parent: parent, key: key, data: data
+      };
+
+      if (cmp <= 0) { parent.left= newNode; }
+      else { parent.right = newNode; }
+
+      return this$1._rebalance(parent, key);
+    })
+    .then(function () { return newNode; });
 };
 
 
@@ -731,12 +762,13 @@ AVLTree.prototype.load = function load (keys, values) {
     if ( keys === void 0 ) keys = [];
     if ( values === void 0 ) values = [];
 
-  if (Array.isArray(keys)) {
-    for (var i = 0, len = keys.length; i < len; i++) {
-      this$1.insert(keys[i], values[i]);
-    }
-  }
-  return this;
+  if (!Array.isArray(keys)) { return this; }
+
+  var pairs = [];
+  keys.forEach(function (k, i) { return pairs.push({ k: k, v: values[i] }); });
+
+  return Promise.each(pairs, function (p) { return this$1.insert(p.k, p.v); })
+    .then(function () { return this$1; });
 };
 
 
@@ -765,4 +797,4 @@ AVLTree.default = AVLTree;
 return AVLTree;
 
 })));
-//# sourceMappingURL=avl.js.map
+//# sourceMappingURL=avl-promise.js.map
