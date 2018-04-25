@@ -1,8 +1,15 @@
-# AVL tree [![npm version](https://badge.fury.io/js/avl.svg)](https://badge.fury.io/js/avl) [![CircleCI](https://circleci.com/gh/w8r/avl.svg?style=svg)](https://circleci.com/gh/w8r/avl)
+# AVL tree 
 
-[AVL-tree](https://en.wikipedia.org/wiki/AVL_tree): **[fast](#benchmarks)**(non-recursive) and **simple**(< 500 lines of code)
+[AVL-tree](https://en.wikipedia.org/wiki/AVL_tree): Largely copied from [avl](https://www.npmjs.com/package/avl), but with a Promise-based comparator!
 
-![AVL-tree](https://upload.wikimedia.org/wikipedia/commons/a/ad/AVL-tree-wBalance_K.svg)
+Existing AVL modules perform all operations synchronously. But what if
+your custom `comparator` function is asynchronous? -- for example, if
+you need to perform a database query, a network request or wait
+for a user's input.
+
+[avl-promise]() to the rescue! However, the performance takes
+a hit -- even if your async comparator immediatly resolves to a
+numeric value. So, **use with caution and at your own risk**.
 
 | Operation     | Average       | Worst case   |
 | ------------- | ------------- | ------------ |
@@ -15,36 +22,25 @@
 ## Install
 
 ```shell
-npm i -S avl
+npm i -S avl-promise
 ```
 
 ```js
-import AVLTree from 'avl';
+import AVLTree from 'avl-promise';
 const tree = new AVLTree();
 ```
 
-Or get it from CDN
-```html
-<script src="https://unpkg.com/avl"></script>
-<script>
-  var tree = new AVLTree();
-  ...
-</script>
-```
-Or use the compiled version 'dist/avl.js'.
+Or use the compiled version 'dist/avl-promise.js'.
 
-[Try it in your browser](https://npm.runkit.com/avl)
+[Try it in your browser](https://npm.runkit.com/avl-promise)
 
 ## API
 
-* `new AVLTree([comparator], [noDuplicates:Boolean])`, where `compare` is optional comparison function
-* `tree.insert(key:any, [data:any])` - Insert item
-* `tree.remove(key:any)` - Remove item
-* `tree.find(key):Node|Null` - Return node by its key
+### Synchronous methods
+
+* `new AVLTree([compare], [noDuplicates:Boolean])`, where `compare` is optional comparison Promise-returning function
 * `tree.at(index:Number):Node|Null` - Return node by its index in sorted order of keys
-* `tree.contains(key):Boolean` - Whether a node with the given key is in the tree
 * `tree.forEach(function(node) {...}):Tree` In-order traversal
-* `tree.range(lo, high, function(node) {} [, context]):Tree` - Walks the range of keys in order. Stops, if the visitor function returns a non-zero value.
 * `tree.keys():Array<key>` - Returns the array of keys in order
 * `tree.values():Array<*>` - Returns the array of data fields in order
 * `tree.pop():Node` - Removes smallest node
@@ -54,11 +50,25 @@ Or use the compiled version 'dist/avl.js'.
 * `tree.maxNode():Node` - Returns the node with highest key
 * `tree.prev(node):Node` - Predecessor node
 * `tree.next(node):Node` - Successor node
+
+### Promise methods
+
+The following methods are dependent on the `compare` function and, as
+such, return Promises.
+
+* `tree.insert(key:any, [data:any])` - Insert item
+* `tree.find(key):Node|Null` - Return node by its key
+* `tree.contains(key):Boolean` - Whether a node with the given key is in the tree
+
+### TBD
+
+* `tree.remove(key:any)` - Remove item
+* `tree.range(lo, high, function(node) {} [, context]):Tree` - Walks the range of keys in order. Stops, if the visitor function returns a non-zero value.
 * `tree.load(keys:Array<*>, [values:Array<*>]):Tree` - Bulk-load items
 
 **Comparator**
 
-`function(a:key,b:key):Number` - Comparator function between two keys, it returns
+`function(a:key,b:key):Promise(Number)` - Comparator function between two keys, it resolves to:
  * `0` if the keys are equal
  * `<0` if `a < b`
  * `>0` if `a > b`
@@ -85,19 +95,21 @@ Or use the compiled version 'dist/avl.js'.
 import Tree from 'avl';
 
 const t = new Tree();
-t.insert(5);
-t.insert(-10);
-t.insert(0);
-t.insert(33);
-t.insert(2);
+t.insert(5)
+  .then(t.insert(-10))
+  .then(t.insert(0))
+  .then(t.insert(33))
+  .then(t.insert(2))
+  .then(() => {
+    console.log(t.keys()); // [-10, 0, 2, 5, 33]
+    console.log(t.size);   // 5
+    console.log(t.min());  // -10
+    console.log(t.max());  // -33
 
-console.log(t.keys()); // [-10, 0, 2, 5, 33]
-console.log(t.size);   // 5
-console.log(t.min());  // -10
-console.log(t.max());  // -33
-
-t.remove(0);
-console.log(t.size);   // 4
+    // TBD
+    // t.remove(0);
+    // console.log(t.size);   // 4
+  });
 ```
 
 **Custom comparator (reverse sort)**
@@ -106,24 +118,23 @@ console.log(t.size);   // 4
 import Tree from 'avl';
 
 const t = new Tree((a, b) => b - a);
-t.insert(5);
-t.insert(-10);
-t.insert(0);
-t.insert(33);
-t.insert(2);
-
-console.log(t.keys()); // [33, 5, 2, 0, -10]
+t.insert(5)
+  .then(() => t.insert(-10))
+  .then(() => t.insert(0))
+  .then(() => t.insert(33))
+  .then(() => t.insert(2))
+  .then(() => console.log(t.keys())); // [33, 5, 2, 0, -10]
 ```
 
-**Bulk insert**
+**Bulk insert (TBD)**
 
 ```js
-import Tree from 'avl';
-
-const t = new Tree();
-t.load([3,2,-10,20], ['C', 'B', 'A', 'D']);
-console.log(t.keys());   // [-10, 2, 3, 20]
-console.log(t.values()); // ['A', 'B', 'C', 'D']
+// import Tree from 'avl';
+// 
+// const t = new Tree();
+// t.load([3,2,-10,20], ['C', 'B', 'A', 'D']);
+// console.log(t.keys());   // [-10, 2, 3, 20]
+// console.log(t.values()); // ['A', 'B', 'C', 'D']
 ```
 
 ## Benchmarks
@@ -166,12 +177,20 @@ npm i
 npm t
 npm run build
 ```
+## Acknowledgements
+
+Many thanks to [Alexander
+Milevski](https://github.com/w8r), whoose module
+[avl](https://www.npmjs.com/package/avl) was adapted, with just the minimum
+changes needed to make it work asynchronously, to create
+[avl-promise](https://www.npmjs.com/package/avl-promise).
+
 
 ## License
 
 The MIT License (MIT)
 
-Copyright (c) 2017 Alexander Milevski <info@w8r.name>
+Copyright (c) 2018 André Santos <andrefs@andrefs.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in

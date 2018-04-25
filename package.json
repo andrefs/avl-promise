@@ -4,7 +4,7 @@
   "author": "Alexander Milevski <info@w8r.name>",
   "license": "MIT",
   "description": "Fast AVL tree for Node and browser",
-  "main": "dist/avl.js",
+  "main": "dist/avl-promise.js",
   "jsnext:main": "src/index",
   "module": "src/index",
   "types": "src/index.d.ts",
