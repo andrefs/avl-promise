@@ -10,10 +10,8 @@ describe ('empty check', () => {
 
     assert.isTrue(tree.isEmpty());
     tree.insert(1)
-      .then(() => assert.isFalse(tree.isEmpty()));
-
-    // TODO
-    //tree.remove(1);
-    //assert.isTrue(tree.isEmpty());
+      .then(() => assert.isFalse(tree.isEmpty()))
+      .then(() => tree.remove(1))
+      .then(() => assert.isTrue(tree.isEmpty()));
   });
 });

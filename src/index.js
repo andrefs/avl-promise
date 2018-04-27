@@ -511,7 +511,7 @@ export default class AVLTree {
       });
   }
 
-  _rebalance (parent, key) {
+  _rebalanceInsert (parent, key) {
     let newRoot;
 
     if (!parent) {
@@ -542,7 +542,7 @@ export default class AVLTree {
           this._size++;
           return Promise.resolve();
         }
-        return this._rebalance(parent.parent, key);
+        return this._rebalanceInsert(parent.parent, key);
       });
   }
 
@@ -561,117 +561,115 @@ export default class AVLTree {
         if (cmp <= 0) parent.left  = newNode;
         else parent.right = newNode;
 
-        return this._rebalance(parent, key);
+        return this._rebalanceInsert(parent, key);
       })
       .then(() => newNode);
   }
 
 
-  // TODO
-  // /**
-  //  * Removes the node from the tree. If not found, returns null.
-  //  * @param  {Key} key
-  //  * @return {?Node}
-  //  */
-  // remove (key) {
-  //   if (!this._root) return null;
 
-  //   var node = this._root;
-  //   var compare = this._comparator;
-  //   var cmp = 0;
+  _rebalanceRemove (parent, pp) {
+    let newRoot;
 
-  //   while (node) {
-  //     cmp = compare(key, node.key);
-  //     if      (cmp === 0) break;
-  //     else if (cmp < 0)   node = node.left;
-  //     else                node = node.right;
-  //   }
-  //   if (!node) return null;
+    if (!parent) return Promise.resolve();
 
-  //   var returnValue = node.key;
-  //   var max, min;
+    if (parent.left === pp) parent.balanceFactor -= 1;
+    else                    parent.balanceFactor += 1;
 
-  //   if (node.left) {
-  //     max = node.left;
+    if (parent.balanceFactor < -1) {
+      if (parent.right.balanceFactor === 1) rotateRight(parent.right);
+      newRoot = rotateLeft(parent);
 
-  //     while (max.left || max.right) {
-  //       while (max.right) max = max.right;
+      if (parent === this._root) this._root = newRoot;
+      parent = newRoot;
 
-  //       node.key = max.key;
-  //       node.data = max.data;
-  //       if (max.left) {
-  //         node = max;
-  //         max = max.left;
-  //       }
-  //     }
+      return Promise.resolve();
+    } else if (parent.balanceFactor > 1) {
+      if (parent.left.balanceFactor === -1) rotateLeft(parent.left);
+      newRoot = rotateRight(parent);
 
-  //     node.key  = max.key;
-  //     node.data = max.data;
-  //     node = max;
-  //   }
+      if (parent === this._root) this._root = newRoot;
+      return Promise.resolve();
+    }
 
-  //   if (node.right) {
-  //     min = node.right;
+    if (parent.balanceFactor === -1 || parent.balanceFactor === 1){
+      return Promise.resolve();
+    }
 
-  //     while (min.left || min.right) {
-  //       while (min.left) min = min.left;
+    return this._rebalanceRemove(parent.parent, parent);
+  }
 
-  //       node.key  = min.key;
-  //       node.data = min.data;
-  //       if (min.right) {
-  //         node = min;
-  //         min = min.right;
-  //       }
-  //     }
+  /**
+   * Removes the node from the tree. If not found, returns null.
+   * @param  {Key} key
+   * @return {?Node}
+   */
+  remove (key) {
+    if (!this._root) return null;
 
-  //     node.key  = min.key;
-  //     node.data = min.data;
-  //     node = min;
-  //   }
+    return this.find(key)
+      .then(node => {
+        if (!node) return Promise.resolve();
 
-  //   var parent = node.parent;
-  //   var pp     = node;
-  //   var newRoot;
+        var returnValue = node.key;
+        var max, min;
 
-  //   while (parent) {
-  //     if (parent.left === pp) parent.balanceFactor -= 1;
-  //     else                    parent.balanceFactor += 1;
+        if (node.left) {
+          max = node.left;
 
-  //     if        (parent.balanceFactor < -1) {
-  //       // inlined
-  //       //var newRoot = rightBalance(parent);
-  //       if (parent.right.balanceFactor === 1) rotateRight(parent.right);
-  //       newRoot = rotateLeft(parent);
+          while (max.left || max.right) {
+            while (max.right) max = max.right;
 
-  //       if (parent === this._root) this._root = newRoot;
-  //       parent = newRoot;
-  //     } else if (parent.balanceFactor > 1) {
-  //       // inlined
-  //       // var newRoot = leftBalance(parent);
-  //       if (parent.left.balanceFactor === -1) rotateLeft(parent.left);
-  //       newRoot = rotateRight(parent);
+            node.key = max.key;
+            node.data = max.data;
+            if (max.left) {
+              node = max;
+              max = max.left;
+            }
+          }
 
-  //       if (parent === this._root) this._root = newRoot;
-  //       parent = newRoot;
-  //     }
+          node.key  = max.key;
+          node.data = max.data;
+          node = max;
+        }
 
-  //     if (parent.balanceFactor === -1 || parent.balanceFactor === 1) break;
+        if (node.right) {
+          min = node.right;
 
-  //     pp     = parent;
-  //     parent = parent.parent;
-  //   }
+          while (min.left || min.right) {
+            while (min.left) min = min.left;
 
-  //   if (node.parent) {
-  //     if (node.parent.left === node) node.parent.left  = null;
-  //     else                           node.parent.right = null;
-  //   }
+            node.key  = min.key;
+            node.data = min.data;
+            if (min.right) {
+              node = min;
+              min = min.right;
+            }
+          }
 
-  //   if (node === this._root) this._root = null;
+          node.key  = min.key;
+          node.data = min.data;
+          node = min;
+        }
 
-  //   this._size--;
-  //   return returnValue;
-  // }
+        var parent = node.parent;
+        var pp     = node;
+        var newRoot;
 
+        return this._rebalanceRemove(parent, pp)
+          .then(() => {
+            if (node.parent) {
+              if (node.parent.left === node) node.parent.left  = null;
+              else                           node.parent.right = null;
+            }
+
+            if (node === this._root) this._root = null;
+
+            this._size--;
+            return Promise.resolve(returnValue);
+          });
+      });
+  }
 
   /**
    * Bulk-load items

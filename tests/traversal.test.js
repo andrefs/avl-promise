@@ -35,12 +35,6 @@ describe('traversal check', () => {
           assert.strictEqual(tree.prev(nodes[i]), nodes[i - 1]);
         }
       });
-
-
-
-     //for (let i = 1; i < 10; i++) {
-     //  assert.strictEqual(tree.prev(tree.find(i)), tree.find(i - 1));
-     //}
   });
 
   it('should find successor for a node', () => {
@@ -68,30 +62,34 @@ describe('traversal check', () => {
   it('should return null for predecessor of the min node', () => {
     const tree = new Tree();
     const keys = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+    let min;
 
     return Promise.each(keys, k => tree.insert(k))
       .then(() => {
-        let min = tree.minNode();
+        min = tree.minNode();
         assert.isNull(tree.prev(min));
-        // TODO
-        // tree.remove(min.key);
-        // min = tree.minNode();
-        // assert.isNull(tree.prev(min));
+        return tree.remove(min.key);
+      })
+      .then(() => {
+        min = tree.minNode();
+        assert.isNull(tree.prev(min));
       });
   });
 
   it('should return null for successor of the max node', () => {
     const tree = new Tree();
     const keys = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+    let max;
 
     return Promise.each(keys, k => tree.insert(k))
       .then(() => {
-        let max = tree.maxNode();
+        max = tree.maxNode();
         assert.isNull(tree.next(max));
-        // TODO
-        //tree.remove(max.key);
-        //max = tree.maxNode();
-        //assert.isNull(tree.next(max));
+        return tree.remove(max.key);
+      })
+      .then(() => {
+        max = tree.maxNode();
+        assert.isNull(tree.next(max));
       });
   });
 
@@ -128,7 +126,7 @@ describe('traversal check', () => {
       });
   });
 
-  // TODO
+  // TODO - implement .range
   // it ('should support range walking', () => {
   //   const tree = new Tree();
   //   for (let i = 0; i < 10; i++) tree.insert(i);

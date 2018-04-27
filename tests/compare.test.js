@@ -1,5 +1,6 @@
 import { describe, it } from 'mocha';
 import { assert }       from 'chai';
+import Promise from 'bluebird';
 
 import Tree from '../src/index';
 
@@ -24,32 +25,33 @@ describe ('custom comparator', () => {
       .then(() => tree.insert(3))
       .then(() => assert.equal(tree.size, 3))
       .then(() => assert.equal(tree.min(), 3))
-      .then(() => assert.equal(tree.max(), 1));
-      // TODO
-    //tree.remove(3);
-    //assert.equal(tree.size, 2);
-    //assert.equal(tree._root.key, 2);
-    //assert.equal(tree._root.left, null);
-    //assert.equal(tree._root.right.key, 1);
+      .then(() => assert.equal(tree.max(), 1))
+      .then(() => tree.remove(3))
+      .then(() => {
+        assert.equal(tree.size, 2);
+        assert.equal(tree._root.key, 2);
+        assert.equal(tree._root.left, null);
+        assert.equal(tree._root.right.key, 1);
+      });
   });
 
 
 
-      // TODO
+  // TODO - array.sort can't handle async comparator
+  //
   // it ('should support custom keys', () => {
-  //   const comparator = (a, b) => a.value - b.value;
+  //   const comparator = (a, b) => Promise.resolve(a.value - b.value);
   //   const tree = new Tree(comparator);
   //   const objects = new Array(10).fill(0).map((n, i) => {
   //     return { value: i, data: Math.pow(i, 2) };
   //   });
   //   shuffle(objects);
 
-  //   objects.forEach((o) => tree.insert(o));
-
-  //   assert.deepEqual(
-  //     tree.keys().map(k => k.value),
-  //     objects.slice().sort(comparator).map(k => k.value)
-  //   );
+  //   return Promise.each(objects, o => tree.insert(o))
+  //     .then(() => assert.deepEqual(
+  //       tree.keys().map(k => k.value),
+  //       objects.slice().sort(comparator).map(k => k.value)
+  //     ));
   // });
 
 });
