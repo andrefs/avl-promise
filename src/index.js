@@ -271,7 +271,7 @@ export default class AVLTree {
   }
 
 
-  // TODO
+  // TODO - .range
   // /**
   //  * Walk key range from `low` to `high`. Stops if `fn` returns a value.
   //  * @param  {Key}      low
@@ -438,20 +438,19 @@ export default class AVLTree {
   }
 
 
-  // TODO depends on .remove
-  // /**
-  //  * Removes and returns the node with smallest key
-  //  * @return {?Node}
-  //  */
-  // pop () {
-  //   var node = this._root, returnValue = null;
-  //   if (node) {
-  //     while (node.left) node = node.left;
-  //     returnValue = { key: node.key, data: node.data };
-  //     this.remove(node.key);
-  //   }
-  //   return returnValue;
-  // }
+  /**
+   * Removes and returns the node with smallest key
+   * @return {?Node}
+   */
+  pop () {
+    var node = this._root, returnValue = null;
+    if (node) {
+      while (node.left) node = node.left;
+      return this.remove(node.key)
+        .then(() => ({ key: node.key, data: node.data }));
+    }
+    return Promise.resolve(null);
+  }
 
 
   /**

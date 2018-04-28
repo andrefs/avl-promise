@@ -31,45 +31,68 @@ describe('Duplicate keys', () => {
       });
   });
 
-  // TODO
-  // it ('should remove from a tree with duplicate keys correctly', () => {
-  //   const tree = new Tree();
-  //   const values = [2, 12, 1, 1, -6, 1, 1];
+  // TODO - refactor to use loop or recursive
+  it ('should remove from a tree with duplicate keys correctly', () => {
+    const tree = new Tree();
+    const keys = [2, 12, 1, 1, -6, 1, 1];
+    let size;
 
-  //   values.forEach((v) => tree.insert(v));
+    return Promise.each(keys, k => tree.insert(k))
+      .then(() => {
+         size = tree.size;
+         return tree.remove(1);
+       })
+       .then(() => {
+          assert.eventually.isTrue(tree.contains(1));
+          assert.isTrue(tree.isBalanced());
+          assert.equal(tree.size, --size);
+         return tree.remove(1);
+       })
+       .then(() => {
+          assert.eventually.isTrue(tree.contains(1));
+          assert.isTrue(tree.isBalanced());
+          assert.equal(tree.size, --size);
+         return tree.remove(1);
+       })
+       .then(() => {
+          assert.eventually.isTrue(tree.contains(1));
+          assert.isTrue(tree.isBalanced());
+          assert.equal(tree.size, --size);
+         return tree.remove(1);
+       })
+       .then(() => {
+          assert.isTrue(tree.isBalanced());
+          assert.equal(tree.size, --size);
+          assert.eventually.isFalse(tree.contains(1));
+          assert.isTrue(tree.isBalanced());
+       });
+  });
 
-  //   let size = tree.size;
-  //   for (let i = 0; i < 4; i++) {
-  //     tree.remove(1);
+  it ('should remove from a tree with multiple duplicate keys correctly', () => {
+    const tree = new Tree();
+    const keys = [2, 12, 1, 1, -6, 1, 1, 2, 0, 2];
 
-  //     if (i < 3) assert.isTrue(tree.contains(1));
-  //     assert.isTrue(tree.isBalanced());
-  //     assert.equal(tree.size, --size);
-  //   }
+    const popAssert = (tree, size) => {
+      if (tree.isEmpty) return Promise.resolve();
 
-  //   assert.isFalse(tree.contains(1));
-  //   assert.isTrue(tree.isBalanced());
-  // });
+      return tree.pop()
+        .then(() => {
+          assert.isTrue(tree.isBalanced());
+          assert.equal(tree.size, --size);
+          return popAssert(tree, size);
+        });
+    };
 
-  // it ('should remove from a tree with multiple duplicate keys correctly', () => {
-  //   const tree = new Tree();
-  //   const values = [2, 12, 1, 1, -6, 1, 1, 2, 0, 2];
-
-  //   values.forEach((v) => tree.insert(v));
-
-  //   let size = tree.size;
-  //   while (!tree.isEmpty()) {
-  //     tree.pop();
-
-  //     assert.isTrue(tree.isBalanced());
-  //     assert.equal(tree.size, --size);
-  //   }
-  // });
+    return Promise.each(keys, k => tree.insert(k))
+      .then(() => {
+        let size = tree.size;
+        return popAssert(tree, size);
+    });
+  });
 
   it ('should disallow duplicates if noDuplicates is set', () => {
     const tree = new Tree(undefined, true);
     const keys = [2, 12, 1, -6, 1];
-    //const keys = [22, 32, 21, 14, 21];
 
     return Promise.each(keys, k => tree.insert(k).then(() => assert.isTrue(tree.isBalanced())))
       .then((nodes) => {
