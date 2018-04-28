@@ -126,56 +126,45 @@ describe('traversal check', () => {
       });
   });
 
-  // TODO - implement .range
-  // it ('should support range walking', () => {
-  //   const tree = new Tree();
-  //   for (let i = 0; i < 10; i++) tree.insert(i);
+  it ('should support range walking', () => {
+    const tree = new Tree();
+    const keys = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+    const arr = [];
 
-  //   const arr = [];
-  //   tree.range(3, 8, (n) => {
-  //     arr.push(n.key);
-  //   });
-  //   assert.deepEqual(arr, [3,4,5,6,7,8]);
-  // });
+    return Promise.each(keys, k => tree.insert(k))
+      .then(() => tree.range(3, 8, n => { arr.push(n.key); }))
+      .then(() => assert.deepEqual(arr, [3,4,5,6,7,8]));
+  });
 
-  // it ('should support range walking with non-existent low key', () => {
-  //   const tree = new Tree();
-  //   for (let i = 0; i < 10; i++) tree.insert(i);
+  it ('should support range walking with non-existent low key', () => {
+    const tree = new Tree();
+    const keys = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+    const arr = [];
 
-  //   const arr = [];
-  //   tree.range(-3,5, (n) => {
-  //     arr.push(n.key);
-  //   });
+    return Promise.each(keys, k => tree.insert(k))
+      .then(() => tree.range(-3,5, n => { arr.push(n.key); }))
+      .then(() => assert.deepEqual(arr, [0,1,2,3,4,5]));
+  });
 
-  //   assert.deepEqual(arr, [0,1,2,3,4,5]);
-  // });
+  it ('should support range walking with non-existent high key', () => {
+    const tree = new Tree();
+    const keys = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+    const arr = [];
 
-  // it ('should support range walking with non-existent high key', () => {
-  //   const tree = new Tree();
-  //   for (let i = 0; i < 10; i++) tree.insert(i);
+    return Promise.each(keys, k => tree.insert(k))
+      .then(() => tree.range(3,15, (n) => { arr.push(n.key); }))
+      .then(() => assert.deepEqual(arr, [3,4,5,6,7,8,9]));
+  });
 
-  //   const arr = [];
-  //   tree.range(3,15, (n) => {
-  //     arr.push(n.key);
-  //   });
+  it ('should support range walking with both keys out of range', () => {
+    const tree = new Tree();
+    const keys = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+    const arr = [];
 
-  //   assert.deepEqual(arr, [3,4,5,6,7,8,9]);
-  // });
-
-  // it ('should support range walking with both keys out of range', () => {
-  //   const tree = new Tree();
-  //   for (let i = 0; i < 10; i++) tree.insert(i);
-
-  //   const arr = [];
-  //   tree.range(10, 20, (n) => {
-  //     arr.push(n.key);
-  //   });
-
-  //   assert.equal(arr.length, 0);
-
-  //   tree.range(-10, 20, (n) => {
-  //     arr.push(n.key);
-  //   });
-  //   assert.deepEqual(arr, tree.keys());
-  // });
+    return Promise.each(keys, k => tree.insert(k))
+      .then(() => tree.range(10, 20, (n) => { arr.push(n.key); }))
+      .then(() => assert.equal(arr.length, 0))
+      .then(() => tree.range(-10, 20, (n) => { arr.push(n.key); }))
+      .then(() => assert.deepEqual(arr, tree.keys()));
+  });
 });

@@ -169,7 +169,7 @@ export default class AVLTree {
    */
 
   contains (key) {
-    return this._containsAsync(key, this._root, this._comparator);
+    return this._containsAsync(key, this._root);
   }
 
   _containsAsync (key, node) {
@@ -271,37 +271,47 @@ export default class AVLTree {
   }
 
 
-  // TODO - .range
-  // /**
-  //  * Walk key range from `low` to `high`. Stops if `fn` returns a value.
-  //  * @param  {Key}      low
-  //  * @param  {Key}      high
-  //  * @param  {Function} fn
-  //  * @param  {*?}       ctx
-  //  * @return {SplayTree}
-  //  */
-  // range(low, high, fn, ctx) {
-  //   const Q = [];
-  //   const compare = this._comparator;
-  //   let node = this._root, cmp;
+  /**
+   * Walk key range from `low` to `high`. Stops if `fn` returns a value.
+   * @param  {Key}      low
+   * @param  {Key}      high
+   * @param  {Function} fn
+   * @param  {*?}       ctx
+   * @return {SplayTree}
+   */
+  range(low, high, fn, ctx) {
+    const Q = [];
+    let node = this._root, cmp;
 
-  //   while (Q.length !== 0 || node) {
-  //     if (node) {
-  //       Q.push(node);
-  //       node = node.left;
-  //     } else {
-  //       node = Q.pop();
-  //       cmp = compare(node.key, high);
-  //       if (cmp > 0) {
-  //         break;
-  //       } else if (compare(node.key, low) >= 0) {
-  //         if (fn.call(ctx, node)) return this; // stop if smth is returned
-  //       }
-  //       node = node.right;
-  //     }
-  //   }
-  //   return this;
-  // }
+    return this._range(Q, node, high, low, fn, ctx);
+  }
+
+  _range(Q, node, high, low, fn, ctx){
+    if (Q.length === 0 && !node) return Promise.resolve(this);
+
+    if(node){
+      Q.push(node);
+      node = node.left;
+      return this._range(Q, node, high, low, fn, ctx);
+    }
+    node = Q.pop();
+    return this._comparatorAsync(node.key, high)
+      .then(cmp => {
+        if (cmp > 0) return Promise.resolve(this);
+
+        return this._comparatorAsync(node.key, low)
+          .then(cmp => {
+            if(cmp >= 0) return Promise.resolve(fn.call(ctx, node));
+            return Promise.resolve();
+          })
+          .then(res => {
+            if(res) return Promise.resolve(this);
+
+            node = node.right;
+            return this._range(Q, node, high, low, fn, ctx);
+          });
+      });
+  }
 
 
   /**
