@@ -18,6 +18,34 @@ numeric value. So, **use with caution and at your own risk**.
 | Insert        | **O(log n)**  | **O(log n)** |
 | Delete        | **O(log n)**  | **O(log n)** |
 
+There's a benchmark included which you can run. Example results from
+my laptop:
+
+```
+Insert (x1000)
+Bintrees x 3,276 ops/sec ±5.03% (71 runs sampled)
+Functional red black tree x 1,648 ops/sec ±9.58% (70 runs sampled)
+Google Closure library AVL x 564 ops/sec ±8.28% (76 runs sampled)
+AVL (sync version) x 5,585 ops/sec ±2.74% (83 runs sampled)
+AVL Promise (current) x 2.98 ops/sec ±11.09% (19 runs sampled)
+- Fastest is AVL (sync version)
+
+Random read (x1000)
+Bintrees x 17,922 ops/sec ±4.22% (82 runs sampled)
+Functional red black tree x 12,898 ops/sec ±6.93% (81 runs sampled)
+Google Closure library AVL x 21.69 ops/sec ±11.76% (41 runs sampled)
+AVL (sync version) x 9,884 ops/sec ±14.96% (65 runs sampled)
+AVL Promise (current) x 33.90 ops/sec ±24.63% (48 runs sampled)
+- Fastest is Bintrees
+
+Remove (x1000)
+Bintrees x 169,381 ops/sec ±5.63% (73 runs sampled)
+Functional red black tree x 20,195 ops/sec ±28.25% (62 runs sampled)
+Google Closure library AVL x 25,000 ops/sec ±11.19% (77 runs sampled)
+AVL (sync version) x 108,944 ops/sec ±1.17% (86 runs sampled)
+AVL Promise (current) x 122 ops/sec ±3.17% (70 runs sampled)
+- Fastest is Bintrees
+```
 
 ## Install
 
