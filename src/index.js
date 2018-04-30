@@ -281,15 +281,15 @@ export default class AVLTree {
    */
   range(low, high, fn, ctx) {
     const Q = [];
-    let node = this._root, cmp;
+    let node = this._root;
 
     return this._range(Q, node, high, low, fn, ctx);
   }
 
-  _range(Q, node, high, low, fn, ctx){
+  _range (Q, node, high, low, fn, ctx) {
     if (Q.length === 0 && !node) return Promise.resolve(this);
 
-    if(node){
+    if (node) {
       Q.push(node);
       node = node.left;
       return this._range(Q, node, high, low, fn, ctx);
@@ -301,11 +301,11 @@ export default class AVLTree {
 
         return this._comparatorAsync(node.key, low)
           .then(cmp => {
-            if(cmp >= 0) return Promise.resolve(fn.call(ctx, node));
+            if (cmp >= 0) return Promise.resolve(fn.call(ctx, node));
             return Promise.resolve();
           })
           .then(res => {
-            if(res) return Promise.resolve(this);
+            if (res) return Promise.resolve(this);
 
             node = node.right;
             return this._range(Q, node, high, low, fn, ctx);
@@ -453,10 +453,10 @@ export default class AVLTree {
    * @return {?Node}
    */
   pop () {
-    var node = this._root, returnValue = null;
+    var node = this._root;
     if (node) {
       while (node.left) node = node.left;
-      const res = {key: node.key, data: node.data };
+      const res = { key: node.key, data: node.data };
       return this.remove(node.key)
         .then(() => res);
     }
@@ -576,8 +576,6 @@ export default class AVLTree {
       .then(() => newNode);
   }
 
-
-
   _rebalanceRemove (parent, pp) {
     let newRoot;
 
@@ -602,7 +600,7 @@ export default class AVLTree {
       return Promise.resolve();
     }
 
-    if (parent.balanceFactor === -1 || parent.balanceFactor === 1){
+    if (parent.balanceFactor === -1 || parent.balanceFactor === 1) {
       return Promise.resolve();
     }
 
@@ -664,7 +662,6 @@ export default class AVLTree {
 
         var parent = node.parent;
         var pp     = node;
-        var newRoot;
 
         return this._rebalanceRemove(parent, pp)
           .then(() => {

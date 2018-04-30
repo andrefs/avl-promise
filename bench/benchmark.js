@@ -13,18 +13,6 @@ const N = 1000;
 const rvalues = new Array(N).fill(0).map((n, i) => Math.floor(Math.random() * N));
 const values = new Array(N).fill(0).map((n, i) => i);
 
-const prefilledAVL = new Tree();
-rvalues.forEach((v) => prefilledAVL.insert(v));
-const prefilledRB = new RBTree((a, b) => a - b);
-rvalues.forEach((v) => prefilledRB.insert(v));
-let prefilledFRB = new FRB();
-rvalues.forEach((v) => { prefilledFRB = prefilledFRB.insert(v); });
-const prefilledGCAVL = new goog.structs.AvlTree((a, b) => a - b);
-rvalues.forEach((v) => prefilledGCAVL.add(v));
-const keys = [];
-for (let i = 0; i < N; i++) keys.push(rvalues[i]);
-
-
 const options = {
   onStart (event) { console.log(this.name); },
   onError (event) { console.log(event.target.error); },
@@ -33,6 +21,18 @@ const options = {
     console.log('- Fastest is ' + this.filter('fastest').map('name') + '\n');
   }
 };
+
+const prefilledAVL = new Tree();
+rvalues.forEach((v) => prefilledAVL.insert(v));
+
+const prefilledRB = new RBTree((a, b) => a - b);
+rvalues.forEach((v) => prefilledRB.insert(v));
+
+let prefilledFRB = new FRB();
+rvalues.forEach((v) => { prefilledFRB = prefilledFRB.insert(v); });
+
+const prefilledGCAVL = new goog.structs.AvlTree((a, b) => a - b);
+rvalues.forEach((v) => prefilledGCAVL.add(v));
 
 new Benchmark.Suite(`Insert (x${N})`, options)
   .add('Bintrees', () => {
@@ -55,7 +55,7 @@ new Benchmark.Suite(`Insert (x${N})`, options)
     defer: true,
     fn: (deferred) => {
       const tree = new PTree();
-      Promise.each(keys, k => tree.insert(k))
+      Promise.each(rvalues, k => tree.insert(k))
         .then(() => deferred.resolve());
     }
   })
