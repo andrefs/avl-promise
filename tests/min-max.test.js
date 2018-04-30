@@ -68,15 +68,15 @@ describe('find min and max', () => {
     assert.isNull(tree.min());
   });
 
-  // it ('should support removing min node', () => {
-  //   const tree = new Tree();
-  //   return tree.insert(5)
-  //     .then(() => tree.insert(3))
-  //     .then(() => tree.insert(1))
-  //     .then(() => tree.insert(4))
-  //     .then(() => tree.insert(2))
-  //     .then(() => assert.equal(tree.pop().key, 1));
-  // });
+  it('should support removing min node', () => {
+    const tree = new Tree();
+    return tree.insert(5)
+      .then(() => tree.insert(3))
+      .then(() => tree.insert(1))
+      .then(() => tree.insert(4))
+      .then(() => tree.insert(2))
+      .then(() => assert.eventually.propertyVal(tree.pop(), 'key', 1));
+  });
 
   it ('should return null for minNode if the tree is empty', () => {
     const tree = new Tree();

@@ -456,8 +456,9 @@ export default class AVLTree {
     var node = this._root, returnValue = null;
     if (node) {
       while (node.left) node = node.left;
+      const res = {key: node.key, data: node.data };
       return this.remove(node.key)
-        .then(() => ({ key: node.key, data: node.data }));
+        .then(() => res);
     }
     return Promise.resolve(null);
   }

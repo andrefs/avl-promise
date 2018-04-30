@@ -32,7 +32,7 @@ describe('Duplicate keys', () => {
   });
 
   // TODO - refactor to use loop or recursive
-  it ('should remove from a tree with duplicate keys correctly', () => {
+  it('should remove from a tree with duplicate keys correctly', () => {
     const tree = new Tree();
     const keys = [2, 12, 1, 1, -6, 1, 1];
     let size;
@@ -60,10 +60,10 @@ describe('Duplicate keys', () => {
           assert.equal(tree.size, --size);
          return tree.remove(1);
        })
+       .then(() => assert.eventually.isFalse(tree.contains(1)))
        .then(() => {
           assert.isTrue(tree.isBalanced());
           assert.equal(tree.size, --size);
-          assert.eventually.isFalse(tree.contains(1));
           assert.isTrue(tree.isBalanced());
        });
   });
