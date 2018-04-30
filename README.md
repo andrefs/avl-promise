@@ -1,15 +1,18 @@
 # AVL tree 
 
-[AVL-tree](https://en.wikipedia.org/wiki/AVL_tree): Largely copied from [avl](https://www.npmjs.com/package/avl), but with a Promise-based comparator!
+Promise-based [AVL-tree](https://en.wikipedia.org/wiki/AVL_tree):
+Largely copied from [avl](https://www.npmjs.com/package/avl), but the
+comparator function returns a Promise!
 
 Existing AVL modules perform all operations synchronously. But what if
 your custom `comparator` function is asynchronous? -- for example, if
 you need to perform a database query, a network request or wait
 for a user's input.
 
-[avl-promise]() to the rescue! However, the performance takes
-a hit -- even if your async comparator immediatly resolves to a
-numeric value. So, **use with caution and at your own risk**.
+[avl-promise](https://www.npmjs.com/package/avl-promise) to the
+rescue! However, the performance takes a hit -- even if your async
+comparator immediatly resolves to a numeric value. So, **use with
+caution and at your own risk**.
 
 | Operation     | Average       | Worst case   |
 | ------------- | ------------- | ------------ |
@@ -17,35 +20,6 @@ numeric value. So, **use with caution and at your own risk**.
 | Search        | **O(log n)**  | **O(log n)** |
 | Insert        | **O(log n)**  | **O(log n)** |
 | Delete        | **O(log n)**  | **O(log n)** |
-
-There's a benchmark included which you can run. Example results from
-my laptop:
-
-```
-Insert (x1000)
-Bintrees x 3,276 ops/sec ±5.03% (71 runs sampled)
-Functional red black tree x 1,648 ops/sec ±9.58% (70 runs sampled)
-Google Closure library AVL x 564 ops/sec ±8.28% (76 runs sampled)
-AVL (sync version) x 5,585 ops/sec ±2.74% (83 runs sampled)
-AVL Promise (current) x 2.98 ops/sec ±11.09% (19 runs sampled)
-- Fastest is AVL (sync version)
-
-Random read (x1000)
-Bintrees x 17,922 ops/sec ±4.22% (82 runs sampled)
-Functional red black tree x 12,898 ops/sec ±6.93% (81 runs sampled)
-Google Closure library AVL x 21.69 ops/sec ±11.76% (41 runs sampled)
-AVL (sync version) x 9,884 ops/sec ±14.96% (65 runs sampled)
-AVL Promise (current) x 33.90 ops/sec ±24.63% (48 runs sampled)
-- Fastest is Bintrees
-
-Remove (x1000)
-Bintrees x 169,381 ops/sec ±5.63% (73 runs sampled)
-Functional red black tree x 20,195 ops/sec ±28.25% (62 runs sampled)
-Google Closure library AVL x 25,000 ops/sec ±11.19% (77 runs sampled)
-AVL (sync version) x 108,944 ops/sec ±1.17% (86 runs sampled)
-AVL Promise (current) x 122 ops/sec ±3.17% (70 runs sampled)
-- Fastest is Bintrees
-```
 
 ## Install
 
@@ -88,9 +62,6 @@ such, return Promises.
 * `tree.find(key):Node|Null` - Return node by its key
 * `tree.contains(key):Boolean` - Whether a node with the given key is in the tree
 * `tree.load(keys:Array<*>, [values:Array<*>]):Tree` - Bulk-load items
-
-### TBD
-
 * `tree.remove(key:any)` - Remove item
 * `tree.range(lo, high, function(node) {} [, context]):Tree` - Walks the range of keys in order. Stops, if the visitor function returns a non-zero value.
 
@@ -134,10 +105,9 @@ t.insert(5)
     console.log(t.min());  // -10
     console.log(t.max());  // -33
 
-    // TBD
-    // t.remove(0);
-    // console.log(t.size);   // 4
-  });
+    return t.remove(0);
+  })
+  .then(() => console.log(t.size));   // 4
 ```
 
 **Custom comparator (reverse sort)**
@@ -154,15 +124,17 @@ t.insert(5)
   .then(() => console.log(t.keys())); // [33, 5, 2, 0, -10]
 ```
 
-**Bulk insert (TBD)**
+**Bulk insert**
 
 ```js
-// import Tree from 'avl';
-// 
-// const t = new Tree();
-// t.load([3,2,-10,20], ['C', 'B', 'A', 'D']);
-// console.log(t.keys());   // [-10, 2, 3, 20]
-// console.log(t.values()); // ['A', 'B', 'C', 'D']
+import Tree from 'avl';
+
+const t = new Tree();
+t.load([3,2,-10,20], ['C', 'B', 'A', 'D'])
+  .then(() => {
+    console.log(t.keys());   // [-10, 2, 3, 20]
+    console.log(t.values()); // ['A', 'B', 'C', 'D']
+  });
 ```
 
 ## Benchmarks
@@ -173,25 +145,28 @@ npm run benchmark
 
 ```
 Insert (x1000)
-Bintrees x 3,742 ops/sec ±0.89% (90 runs sampled)
-Functional red black tree x 1,880 ops/sec ±4.02% (78 runs sampled)
-Google Closure library AVL x 622 ops/sec ±4.22% (81 runs sampled)
-AVL (current) x 6,151 ops/sec ±8.50% (72 runs sampled)
-- Fastest is AVL (current)
+Bintrees x 3,276 ops/sec ±5.03% (71 runs sampled)
+Functional red black tree x 1,648 ops/sec ±9.58% (70 runs sampled)
+Google Closure library AVL x 564 ops/sec ±8.28% (76 runs sampled)
+AVL (sync version) x 5,585 ops/sec ±2.74% (83 runs sampled)
+AVL Promise (current) x 2.98 ops/sec ±11.09% (19 runs sampled)
+- Fastest is AVL (sync version)
 
 Random read (x1000)
-Bintrees x 7,371 ops/sec ±2.69% (83 runs sampled)
-Functional red black tree x 13,010 ops/sec ±2.93% (83 runs sampled)
-Google Closure library AVL x 27.63 ops/sec ±1.04% (49 runs sampled)
-AVL (current) x 12,921 ops/sec ±1.83% (86 runs sampled)
-- Fastest is AVL (current)
+Bintrees x 17,922 ops/sec ±4.22% (82 runs sampled)
+Functional red black tree x 12,898 ops/sec ±6.93% (81 runs sampled)
+Google Closure library AVL x 21.69 ops/sec ±11.76% (41 runs sampled)
+AVL (sync version) x 9,884 ops/sec ±14.96% (65 runs sampled)
+AVL Promise (current) x 33.90 ops/sec ±24.63% (48 runs sampled)
+- Fastest is Bintrees
 
 Remove (x1000)
-Bintrees x 106,837 ops/sec ±0.74% (86 runs sampled)
-Functional red black tree x 25,368 ops/sec ±0.89% (88 runs sampled)
-Google Closure library AVL x 31,719 ops/sec ±1.21% (89 runs sampled)
-AVL (current) x 108,131 ops/sec ±0.70% (88 runs sampled)
-- Fastest is AVL (current)
+Bintrees x 169,381 ops/sec ±5.63% (73 runs sampled)
+Functional red black tree x 20,195 ops/sec ±28.25% (62 runs sampled)
+Google Closure library AVL x 25,000 ops/sec ±11.19% (77 runs sampled)
+AVL (sync version) x 108,944 ops/sec ±1.17% (86 runs sampled)
+AVL Promise (current) x 122 ops/sec ±3.17% (70 runs sampled)
+- Fastest is Bintrees
 ```
 
 Adding google closure library to the benchmark is, of course, unfair, cause the
@@ -209,8 +184,9 @@ npm run build
 
 Many thanks to [Alexander
 Milevski](https://github.com/w8r), whoose module
-[avl](https://www.npmjs.com/package/avl) was adapted, with just the minimum
-changes needed to make it work asynchronously, to create
+[avl](https://www.npmjs.com/package/avl) was adapted (both the code
+and the docs), with just the minimum changes needed to make it work
+asynchronously, to create
 [avl-promise](https://www.npmjs.com/package/avl-promise).
 
 
