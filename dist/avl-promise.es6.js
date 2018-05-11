@@ -1,8 +1,8 @@
 /**
- * avl v1.4.2
- * Fast AVL tree for Node and browser
+ * avl-promise v0.0.2
+ * Largely copied from avl (https://www.npmjs.com/package/avl), but with a Promise-based comparator!
  *
- * @author Alexander Milevski <info@w8r.name>
+ * @author André Santos <andrefs@andrefs.com>
  * @license MIT
  * @preserve
  */
@@ -70,6 +70,9 @@ function isBalanced(root) {
 function height(node) {
   return node ? (1 + Math.max(height(node.left), height(node.right))) : 0;
 }
+
+// TODO update doc comments
+// TODO remove dead code
 
 // function createNode (parent, left, right, height, key, data) {
 //   return { parent, left, right, balanceFactor: height, key, data };
@@ -236,7 +239,7 @@ class AVLTree {
    */
 
   contains (key) {
-    return this._containsAsync(key, this._root, this._comparator);
+    return this._containsAsync(key, this._root);
   }
 
   _containsAsync (key, node) {
@@ -348,25 +351,36 @@ class AVLTree {
    */
   range(low, high, fn, ctx) {
     const Q = [];
-    const compare = this._comparator;
-    let node = this._root, cmp;
+    let node = this._root;
 
-    while (Q.length !== 0 || node) {
-      if (node) {
-        Q.push(node);
-        node = node.left;
-      } else {
-        node = Q.pop();
-        cmp = compare(node.key, high);
-        if (cmp > 0) {
-          break;
-        } else if (compare(node.key, low) >= 0) {
-          if (fn.call(ctx, node)) return this; // stop if smth is returned
-        }
-        node = node.right;
-      }
+    return this._range(Q, node, high, low, fn, ctx);
+  }
+
+  _range (Q, node, high, low, fn, ctx) {
+    if (Q.length === 0 && !node) return Promise.resolve(this);
+
+    if (node) {
+      Q.push(node);
+      node = node.left;
+      return this._range(Q, node, high, low, fn, ctx);
     }
-    return this;
+    node = Q.pop();
+    return this._comparatorAsync(node.key, high)
+      .then(cmp => {
+        if (cmp > 0) return Promise.resolve(this);
+
+        return this._comparatorAsync(node.key, low)
+          .then(cmp => {
+            if (cmp >= 0) return Promise.resolve(fn.call(ctx, node));
+            return Promise.resolve();
+          })
+          .then(res => {
+            if (res) return Promise.resolve(this);
+
+            node = node.right;
+            return this._range(Q, node, high, low, fn, ctx);
+          });
+      });
   }
 
 
@@ -509,13 +523,14 @@ class AVLTree {
    * @return {?Node}
    */
   pop () {
-    var node = this._root, returnValue = null;
+    var node = this._root;
     if (node) {
       while (node.left) node = node.left;
-      returnValue = { key: node.key, data: node.data };
-      this.remove(node.key);
+      const res = { key: node.key, data: node.data };
+      return this.remove(node.key)
+        .then(() => res);
     }
-    return returnValue;
+    return Promise.resolve(null);
   }
 
 
@@ -556,7 +571,7 @@ class AVLTree {
       this._size++;
       return Promise.resolve(this._root);
     }
-    return this._insertAsync(key, data, this._root, this._noDuplicates);
+    return Promise.resolve(this._insertAsync(key, data, this._root, this._noDuplicates));
   }
 
   _findParent (key, node) {
@@ -576,7 +591,7 @@ class AVLTree {
       });
   }
 
-  _rebalance (parent, key) {
+  _rebalanceInsert (parent, key) {
     let newRoot;
 
     if (!parent) {
@@ -607,7 +622,7 @@ class AVLTree {
           this._size++;
           return Promise.resolve();
         }
-        return this._rebalance(parent.parent, key);
+        return this._rebalanceInsert(parent.parent, key);
       });
   }
 
@@ -626,11 +641,41 @@ class AVLTree {
         if (cmp <= 0) parent.left  = newNode;
         else parent.right = newNode;
 
-        return this._rebalance(parent, key);
+        return this._rebalanceInsert(parent, key);
       })
       .then(() => newNode);
   }
 
+  _rebalanceRemove (parent, pp) {
+    let newRoot;
+
+    if (!parent) return Promise.resolve();
+
+    if (parent.left === pp) parent.balanceFactor -= 1;
+    else                    parent.balanceFactor += 1;
+
+    if (parent.balanceFactor < -1) {
+      if (parent.right.balanceFactor === 1) rotateRight(parent.right);
+      newRoot = rotateLeft(parent);
+
+      if (parent === this._root) this._root = newRoot;
+      parent = newRoot;
+
+      return Promise.resolve();
+    } else if (parent.balanceFactor > 1) {
+      if (parent.left.balanceFactor === -1) rotateLeft(parent.left);
+      newRoot = rotateRight(parent);
+
+      if (parent === this._root) this._root = newRoot;
+      return Promise.resolve();
+    }
+
+    if (parent.balanceFactor === -1 || parent.balanceFactor === 1) {
+      return Promise.resolve();
+    }
+
+    return this._rebalanceRemove(parent.parent, parent);
+  }
 
   /**
    * Removes the node from the tree. If not found, returns null.
@@ -640,102 +685,68 @@ class AVLTree {
   remove (key) {
     if (!this._root) return null;
 
-    var node = this._root;
-    var compare = this._comparator;
-    var cmp = 0;
+    return this.find(key)
+      .then(node => {
+        if (!node) return Promise.resolve();
 
-    while (node) {
-      cmp = compare(key, node.key);
-      if      (cmp === 0) break;
-      else if (cmp < 0)   node = node.left;
-      else                node = node.right;
-    }
-    if (!node) return null;
+        var returnValue = node.key;
+        var max, min;
 
-    var returnValue = node.key;
-    var max, min;
+        if (node.left) {
+          max = node.left;
 
-    if (node.left) {
-      max = node.left;
+          while (max.left || max.right) {
+            while (max.right) max = max.right;
 
-      while (max.left || max.right) {
-        while (max.right) max = max.right;
+            node.key = max.key;
+            node.data = max.data;
+            if (max.left) {
+              node = max;
+              max = max.left;
+            }
+          }
 
-        node.key = max.key;
-        node.data = max.data;
-        if (max.left) {
+          node.key  = max.key;
+          node.data = max.data;
           node = max;
-          max = max.left;
         }
-      }
 
-      node.key  = max.key;
-      node.data = max.data;
-      node = max;
-    }
+        if (node.right) {
+          min = node.right;
 
-    if (node.right) {
-      min = node.right;
+          while (min.left || min.right) {
+            while (min.left) min = min.left;
 
-      while (min.left || min.right) {
-        while (min.left) min = min.left;
+            node.key  = min.key;
+            node.data = min.data;
+            if (min.right) {
+              node = min;
+              min = min.right;
+            }
+          }
 
-        node.key  = min.key;
-        node.data = min.data;
-        if (min.right) {
+          node.key  = min.key;
+          node.data = min.data;
           node = min;
-          min = min.right;
         }
-      }
 
-      node.key  = min.key;
-      node.data = min.data;
-      node = min;
-    }
+        var parent = node.parent;
+        var pp     = node;
 
-    var parent = node.parent;
-    var pp     = node;
-    var newRoot;
+        return this._rebalanceRemove(parent, pp)
+          .then(() => {
+            if (node.parent) {
+              if (node.parent.left === node) node.parent.left  = null;
+              else                           node.parent.right = null;
+            }
 
-    while (parent) {
-      if (parent.left === pp) parent.balanceFactor -= 1;
-      else                    parent.balanceFactor += 1;
+            if (node === this._root) this._root = null;
 
-      if        (parent.balanceFactor < -1) {
-        // inlined
-        //var newRoot = rightBalance(parent);
-        if (parent.right.balanceFactor === 1) rotateRight(parent.right);
-        newRoot = rotateLeft(parent);
-
-        if (parent === this._root) this._root = newRoot;
-        parent = newRoot;
-      } else if (parent.balanceFactor > 1) {
-        // inlined
-        // var newRoot = leftBalance(parent);
-        if (parent.left.balanceFactor === -1) rotateLeft(parent.left);
-        newRoot = rotateRight(parent);
-
-        if (parent === this._root) this._root = newRoot;
-        parent = newRoot;
-      }
-
-      if (parent.balanceFactor === -1 || parent.balanceFactor === 1) break;
-
-      pp     = parent;
-      parent = parent.parent;
-    }
-
-    if (node.parent) {
-      if (node.parent.left === node) node.parent.left  = null;
-      else                           node.parent.right = null;
-    }
-
-    if (node === this._root) this._root = null;
-
-    this._size--;
-    return returnValue;
+            this._size--;
+            return Promise.resolve(returnValue);
+          });
+      });
   }
-
 
   /**
    * Bulk-load items

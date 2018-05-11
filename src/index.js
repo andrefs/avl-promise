@@ -501,7 +501,7 @@ export default class AVLTree {
       this._size++;
       return Promise.resolve(this._root);
     }
-    return this._insertAsync(key, data, this._root, this._noDuplicates);
+    return Promise.resolve(this._insertAsync(key, data, this._root, this._noDuplicates));
   }
 
   _findParent (key, node) {
