@@ -1,6 +1,6 @@
 {
   "name": "avl-promise",
-  "version": "0.0.2",
+  "version": "0.1.0",
   "author": "André Santos <andrefs@andrefs.com>",
   "license": "MIT",
   "description": "Largely copied from avl (https://www.npmjs.com/package/avl), but with a Promise-based comparator!",

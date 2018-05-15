@@ -136,11 +136,23 @@ export default class AVLTree {
    * @param  {comparatorCallback} [comparator]
    * @param  {boolean}            [noDuplicates=false] Disallow duplicates
    */
-  constructor (comparator, noDuplicates = false) {
-    this._comparatorAsync = comparator || DEFAULT_COMPARE_ASYNC;
+  constructor (comparator, noDuplicates = false, countCompareCalls = false) {
     this._root = null;
     this._size = 0;
+    this._countCompareCalls = !!countCompareCalls;
+    this._compareCallsCounter = 0;
     this._noDuplicates = !!noDuplicates;
+
+    const incWrapper = (f) => {
+      return (...args) => {
+        this._compareCallsCounter++;
+        return f(...args);
+      }
+    };
+
+    this._comparatorAsync = this._countCompareCalls ?
+      incWrapper(comparator || DEFAULT_COMPARE_ASYNC) :
+      comparator || DEFAULT_COMPARE_ASYNC;
   }
 
 
@@ -169,6 +181,9 @@ export default class AVLTree {
    */
 
   contains (key) {
+    if( this._countCompareCalls ){
+      this._compareCallsCounter = 0;
+    }
     return this._containsAsync(key, this._root);
   }
 
@@ -280,6 +295,9 @@ export default class AVLTree {
    * @return {SplayTree}
    */
   range(low, high, fn, ctx) {
+    if( this._countCompareCalls ){
+      this._compareCallsCounter = 0;
+    }
     const Q = [];
     let node = this._root;
 
@@ -471,6 +489,9 @@ export default class AVLTree {
    */
 
   find (key) {
+    if( this._countCompareCalls ){
+      this._compareCallsCounter = 0;
+    }
     return this._findAsync(key, this._root);
   }
 
@@ -493,6 +514,13 @@ export default class AVLTree {
    */
 
   insert (key, data) {
+    if( this._countCompareCalls ){
+      this._compareCallsCounter = 0;
+    }
+    return this._insert(key, data);
+  }
+
+  _insert (key, data) {
     if (!this._root) {
       this._root = {
         parent: null, left: null, right: null, balanceFactor: 0,
@@ -615,7 +643,7 @@ export default class AVLTree {
   remove (key) {
     if (!this._root) return null;
 
-    return this.find(key)
+    return this._findAsync(key, this._root)
       .then(node => {
         if (!node) return Promise.resolve();
 
@@ -685,12 +713,15 @@ export default class AVLTree {
    * @return {AVLTree}
    */
   load(keys = [], values = []) {
+    if( this._countCompareCalls ){
+      this._compareCallsCounter = 0;
+    }
     if (!Array.isArray(keys)) return this;
 
     const pairs = [];
     keys.forEach((k, i) => pairs.push({ k, v: values[i] }));
 
-    return Promise.each(pairs, p => this.insert(p.k, p.v))
+    return Promise.each(pairs, p => this._insert(p.k, p.v))
       .then(() => this);
   }
 
