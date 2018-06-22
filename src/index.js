@@ -143,11 +143,9 @@ export default class AVLTree {
     this._compareCallsCounter = 0;
     this._noDuplicates = !!noDuplicates;
 
-    const incWrapper = (f) => {
-      return (...args) => {
-        this._compareCallsCounter++;
-        return f(...args);
-      }
+    const incWrapper = (f) => (...args) => {
+      this._compareCallsCounter++;
+      return f(...args);
     };
 
     this._comparatorAsync = this._countCompareCalls ?
@@ -181,7 +179,7 @@ export default class AVLTree {
    */
 
   contains (key) {
-    if( this._countCompareCalls ){
+    if (this._countCompareCalls) {
       this._compareCallsCounter = 0;
     }
     return this._containsAsync(key, this._root);
@@ -295,7 +293,7 @@ export default class AVLTree {
    * @return {SplayTree}
    */
   range(low, high, fn, ctx) {
-    if( this._countCompareCalls ){
+    if (this._countCompareCalls) {
       this._compareCallsCounter = 0;
     }
     const Q = [];
@@ -489,7 +487,7 @@ export default class AVLTree {
    */
 
   find (key) {
-    if( this._countCompareCalls ){
+    if (this._countCompareCalls) {
       this._compareCallsCounter = 0;
     }
     return this._findAsync(key, this._root);
@@ -514,7 +512,7 @@ export default class AVLTree {
    */
 
   insert (key, data) {
-    if( this._countCompareCalls ){
+    if (this._countCompareCalls) {
       this._compareCallsCounter = 0;
     }
     return this._insert(key, data);
@@ -713,7 +711,7 @@ export default class AVLTree {
    * @return {AVLTree}
    */
   load(keys = [], values = []) {
-    if( this._countCompareCalls ){
+    if (this._countCompareCalls) {
       this._compareCallsCounter = 0;
     }
     if (!Array.isArray(keys)) return this;

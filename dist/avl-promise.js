@@ -1,5 +1,5 @@
 /**
- * avl-promise v0.0.2
+ * avl-promise v0.1.0
  * Largely copied from avl (https://www.npmjs.com/package/avl), but with a Promise-based comparator!
  *
  * @author André Santos <andrefs@andrefs.com>
@@ -199,13 +199,28 @@ function rotateRight (node) {
 // }
 
 
-var AVLTree = function AVLTree (comparator, noDuplicates) {
+var AVLTree = function AVLTree (comparator, noDuplicates, countCompareCalls) {
+  var this$1 = this;
   if ( noDuplicates === void 0 ) noDuplicates = false;
+  if ( countCompareCalls === void 0 ) countCompareCalls = false;
 
-  this._comparatorAsync = comparator || DEFAULT_COMPARE_ASYNC;
   this._root = null;
   this._size = 0;
+  this._countCompareCalls = !!countCompareCalls;
+  this._compareCallsCounter = 0;
   this._noDuplicates = !!noDuplicates;
+
+  var incWrapper = function (f) { return function () {
+    var args = [], len = arguments.length;
+    while ( len-- ) args[ len ] = arguments[ len ];
+
+    this$1._compareCallsCounter++;
+    return f.apply(void 0, args);
+  }; };
+
+  this._comparatorAsync = this._countCompareCalls ?
+    incWrapper(comparator || DEFAULT_COMPARE_ASYNC) :
+    comparator || DEFAULT_COMPARE_ASYNC;
 };
 
 var prototypeAccessors = { size: {} };
@@ -236,6 +251,9 @@ prototypeAccessors.size.get = function () {
  */
 
 AVLTree.prototype.contains = function contains (key) {
+  if (this._countCompareCalls) {
+    this._compareCallsCounter = 0;
+  }
   return this._containsAsync(key, this._root);
 };
 
@@ -349,6 +367,9 @@ AVLTree.prototype.forEach = function forEach (callback) {
  * @return {SplayTree}
  */
 AVLTree.prototype.range = function range (low, high, fn, ctx) {
+  if (this._countCompareCalls) {
+    this._compareCallsCounter = 0;
+  }
   var Q = [];
   var node = this._root;
 
@@ -542,6 +563,9 @@ AVLTree.prototype.pop = function pop () {
  */
 
 AVLTree.prototype.find = function find (key) {
+  if (this._countCompareCalls) {
+    this._compareCallsCounter = 0;
+  }
   return this._findAsync(key, this._root);
 };
 
@@ -566,6 +590,13 @@ AVLTree.prototype._findAsync = function _findAsync (key, node) {
  */
 
 AVLTree.prototype.insert = function insert (key, data) {
+  if (this._countCompareCalls) {
+    this._compareCallsCounter = 0;
+  }
+  return this._insert(key, data);
+};
+
+AVLTree.prototype._insert = function _insert (key, data) {
   if (!this._root) {
     this._root = {
       parent: null, left: null, right: null, balanceFactor: 0,
@@ -699,7 +730,7 @@ AVLTree.prototype.remove = function remove (key) {
 
   if (!this._root) { return null; }
 
-  return this.find(key)
+  return this._findAsync(key, this._root)
     .then(function (node) {
       if (!node) { return Promise.resolve(); }
 
@@ -773,12 +804,15 @@ AVLTree.prototype.load = function load (keys, values) {
     if ( keys === void 0 ) keys = [];
     if ( values === void 0 ) values = [];
 
+  if (this._countCompareCalls) {
+    this._compareCallsCounter = 0;
+  }
   if (!Array.isArray(keys)) { return this; }
 
   var pairs = [];
   keys.forEach(function (k, i) { return pairs.push({ k: k, v: values[i] }); });
 
-  return Promise.each(pairs, function (p) { return this$1.insert(p.k, p.v); })
+  return Promise.each(pairs, function (p) { return this$1._insert(p.k, p.v); })
     .then(function () { return this$1; });
 };
 
